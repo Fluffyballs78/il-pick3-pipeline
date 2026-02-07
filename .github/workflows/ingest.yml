@@ -1,1 +1,41 @@
+name: Ingest IL Pick 3
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Runs multiple times daily (UTC). Extra runs cover late posting + DST issues.
+    - cron: "10 19 * * *"
+    - cron: "10 04 * * *"
+    - cron: "30 09 * * *"
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      - name: Run ingestion
+        env:
+          MODE: daily
+          START_DRAW_ID: "23286"
+          DAILY_LOOKBACK: "80"
+          DB_PATH: "data/pick3.sqlite"
+          CSV_PATH: "data/pick3.csv"
+        run: python ingest_pick3.py
+
+      - name: Commit updated dataset
+        run: |
+          git config user.name "pick3-bot"
+          git config user.email "pick3-bot@users.noreply.github.com"
+          git add data/pick3.sqlite data/pick3.csv
+          git commit -m "Update Pick 3 dataset" || echo "No changes"
+          git push
 
