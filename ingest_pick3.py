@@ -12,15 +12,14 @@ from bs4 import BeautifulSoup
 
 IL_PICK3_DRAW_URL_TMPL = "https://www.illinoislottery.com/dbg/results/pick3/draw/{draw_id}"
 
-# Your authoritative start
-START_DRAW_ID = int(os.getenv("START_DRAW_ID", "23286"))  # 2025-09-01 Midday
-MODE = os.getenv("MODE", "daily")                         # daily | backfill
-DAILY_LOOKBACK = int(os.getenv("DAILY_LOOKBACK", "120"))
+START_DRAW_ID = int(os.getenv("START_DRAW_ID", "23286"))   # 2025-09-01 Midday
+MODE = os.getenv("MODE", "daily")                          # daily | backfill
+DAILY_LOOKBACK = int(os.getenv("DAILY_LOOKBACK", "120"))   # used only in daily mode
+MAX_DRAW_ID = os.getenv("MAX_DRAW_ID")                     # optional override to avoid slow probing
 
 DB_PATH = os.getenv("DB_PATH", "data/pick3.sqlite")
 CSV_PATH = os.getenv("CSV_PATH", "data/pick3.csv")
 
-# Browser-ish headers to reduce 403s from cloud IPs
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; Pick3Bot/1.0; +https://github.com/)",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -80,23 +79,20 @@ def init_db(conn: sqlite3.Connection) -> None:
 
 
 def url_exists(url: str) -> bool:
+    """
+    For probing only. If we get 403, treat it as NOT usable for existence checks
+    (otherwise probing can take forever).
+    """
     r = requests.get(url, headers=HEADERS, timeout=30)
     if r.status_code == 404:
         return False
     if r.status_code == 403:
-        # Some blocks return 403 even for valid pages.
-        # Treat as "exists" and let parsing decide.
-        return True
+        return False
     r.raise_for_status()
     return True
 
 
 def get_latest_draw_id_fallback(start_hint: int) -> int:
-    """
-    Find latest draw_id by probing draw pages:
-    1) exponential search to find an upper bound (404)
-    2) binary search to find the last existing id
-    """
     low = start_hint
     step = 1
 
@@ -112,8 +108,7 @@ def get_latest_draw_id_fallback(start_hint: int) -> int:
             high = low + step
             break
 
-    left = low
-    right = high
+    left, right = low, high
 
     # Binary search for last existing id
     while left + 1 < right:
@@ -138,18 +133,13 @@ def parse_draw(draw_id: int) -> Optional[Dict[str, Any]]:
     url = IL_PICK3_DRAW_URL_TMPL.format(draw_id=draw_id)
     r = requests.get(url, headers=HEADERS, timeout=30)
 
-    if r.status_code == 404:
+    if r.status_code in (404, 403):
         return None
-    if r.status_code == 403:
-        # Blocked: cannot parse
-        return None
-
     r.raise_for_status()
 
     soup = BeautifulSoup(r.text, "lxml")
     text = soup.get_text(" ", strip=True)
 
-    # Date like "Feb 6, 2026"
     m_date = re.search(r"\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),\s+(20\d{2})\b", text)
     m_time = re.search(r"\b(midday|evening)\b", text, re.IGNORECASE)
     if not m_date or not m_time:
@@ -159,7 +149,6 @@ def parse_draw(draw_id: int) -> Optional[Dict[str, Any]]:
     draw_date = dt.strftime("%Y-%m-%d")
     draw_time = m_time.group(1).upper()  # MIDDAY / EVENING
 
-    # Narrow the text around "Results" to avoid payout table numbers
     idx = text.lower().find("results")
     tail = text[idx: idx + 600] if idx >= 0 else text[:600]
     digits = [int(x) for x in re.findall(r"\b\d\b", tail)]
@@ -168,7 +157,6 @@ def parse_draw(draw_id: int) -> Optional[Dict[str, Any]]:
 
     d1, d2, d3, fb = digits[0], digits[1], digits[2], digits[3]
 
-    # Validate
     if draw_time not in ("MIDDAY", "EVENING"):
         return None
     if any(d < 0 or d > 9 for d in (d1, d2, d3, fb)):
@@ -192,9 +180,7 @@ def parse_draw(draw_id: int) -> Optional[Dict[str, Any]]:
     return {
         "draw_date": draw_date,
         "draw_time": draw_time,
-        "d1": d1,
-        "d2": d2,
-        "d3": d3,
+        "d1": d1, "d2": d2, "d3": d3,
         "fireball": fb,
         "pick3_str": pick3_str,
         "sorted_str": sorted_str,
@@ -245,7 +231,6 @@ def upsert(conn: sqlite3.Connection, row: Dict[str, Any]) -> None:
         conn.commit()
         return
 
-    # Audit record
     conn.execute("""
         INSERT INTO pick3_audit (
             draw_date, draw_time, changed_at, old_checksum, new_checksum,
@@ -254,16 +239,11 @@ def upsert(conn: sqlite3.Connection, row: Dict[str, Any]) -> None:
     """, (
         row["draw_date"], row["draw_time"], now,
         old_checksum, row["checksum"],
-        json.dumps({
-            "pick3_d1": od1, "pick3_d2": od2, "pick3_d3": od3,
-            "fireball": ofb, "source_draw_id": old_draw_id,
-            "checksum": old_checksum
-        }),
+        json.dumps({"checksum": old_checksum}),
         json.dumps(row),
         "correction sweep detected mismatch"
     ))
 
-    # Update row
     conn.execute("""
         UPDATE pick3_draws SET
             pick3_d1=?, pick3_d2=?, pick3_d3=?, fireball=?,
@@ -306,7 +286,11 @@ def main() -> None:
     conn = sqlite3.connect(DB_PATH)
     init_db(conn)
 
-    latest = get_latest_draw_id(conn)
+    # If MAX_DRAW_ID is provided, use it (prevents slow probing).
+    if MAX_DRAW_ID:
+        latest = int(MAX_DRAW_ID)
+    else:
+        latest = get_latest_draw_id(conn)
 
     if MODE == "backfill":
         start = START_DRAW_ID
