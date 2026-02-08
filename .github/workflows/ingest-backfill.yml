@@ -27,6 +27,7 @@ jobs:
       - name: Force reset dataset artifacts (backfill mode)
         run: |
           rm -f data/pick3.sqlite data/pick3.csv
+          echo "[workflow] After reset:"
           ls -la data || true
 
       - name: Run full historical backfill
