@@ -1,4 +1,4 @@
-name: Ingest IL Pick 3
+name: Ingest IL Pick 3 (Backfill)
 
 on:
   workflow_dispatch:
@@ -24,10 +24,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run one-time backfill
+      - name: Run one-time backfill (bounded)
         env:
           MODE: backfill
           START_DRAW_ID: "23286"
+          MAX_DRAW_ID: "23603"
           DB_PATH: "data/pick3.sqlite"
           CSV_PATH: "data/pick3.csv"
         run: python ingest_pick3.py
@@ -38,12 +39,4 @@ jobs:
           git config user.email "pick3-bot@users.noreply.github.com"
           git add data/pick3.sqlite data/pick3.csv
           git commit -m "Backfill Illinois Pick 3 dataset" || echo "No changes to commit"
-          git push
-
-      - name: Commit updated dataset
-        run: |
-          git config user.name "pick3-bot"
-          git config user.email "pick3-bot@users.noreply.github.com"
-          git add data/pick3.sqlite data/pick3.csv
-          git commit -m "Update Pick 3 dataset" || echo "No changes"
           git push
