@@ -5,18 +5,20 @@ import json
 import hashlib
 import sqlite3
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Tuple
 
 import requests
 from bs4 import BeautifulSoup
 
-# LotteryUSA pages (Midday + Evening)
-MIDDAY_YEAR_URL = "https://www.lotteryusa.com/illinois/midday-3/year"
-EVENING_YEAR_URL = "https://www.lotteryusa.com/illinois/daily-3/year"
+# =========================
+# SOURCE: Lottery.net (has real year archives)
+# =========================
+MIDDAY_YEAR_URL_TMPL = "https://www.lottery.net/illinois/pick-3-midday/numbers/{year}"
+EVENING_YEAR_URL_TMPL = "https://www.lottery.net/illinois/pick-3-evening/numbers/{year}"
 
 DB_PATH = os.getenv("DB_PATH", "data/pick3.sqlite")
 CSV_PATH = os.getenv("CSV_PATH", "data/pick3.csv")
-START_DATE = os.getenv("START_DATE", "2025-09-01")  # inclusive, YYYY-MM-DD
+START_DATE = os.getenv("START_DATE", "2010-01-01")  # inclusive, YYYY-MM-DD
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; Pick3Bot/1.0; +https://github.com/)",
@@ -25,15 +27,20 @@ HEADERS = {
     "Connection": "keep-alive",
 }
 
-# Example: "Friday, Feb 6, 2026"
-DATE_LINE_RE = re.compile(
-    r"^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s+([A-Za-z]{3})\s+(\d{1,2}),\s+(20\d{2})$",
-    re.IGNORECASE,
+WEEKDAYS = {"Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"}
+
+# Lottery.net uses:
+#   Tuesday
+#   December 31, 2019
+DATE_LINE_RE_2 = re.compile(
+    r"^([A-Za-z]+)\s+(\d{1,2}),\s+(20\d{2})$"
 )
 
-MONTH_MAP = {m: i for i, m in enumerate(
-    ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], start=1
-)}
+MONTH_MAP_FULL = {
+    "January": 1, "February": 2, "March": 3, "April": 4,
+    "May": 5, "June": 6, "July": 7, "August": 8,
+    "September": 9, "October": 10, "November": 11, "December": 12,
+}
 
 
 def utc_now_iso() -> str:
@@ -85,6 +92,8 @@ def init_db(conn: sqlite3.Connection) -> None:
         reason TEXT NOT NULL
     );
     """)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pick3_draws_date ON pick3_draws(draw_date);")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pick3_draws_time ON pick3_draws(draw_time);")
     conn.commit()
 
 
@@ -122,7 +131,6 @@ def upsert(conn: sqlite3.Connection, row: Dict[str, Any]) -> None:
         conn.commit()
         return
 
-    # Audit + Update
     conn.execute("""
         INSERT INTO pick3_audit (
             draw_date, draw_time, changed_at, old_checksum, new_checksum,
@@ -184,51 +192,53 @@ def fetch_lines(url: str) -> List[str]:
     return [ln.strip() for ln in text.split("\n") if ln.strip()]
 
 
-def parse_year_page(lines: List[str], draw_time: str, source_url: str) -> List[Dict[str, Any]]:
+def parse_lotterynet_year_page(lines: List[str], draw_time: str, source_url: str) -> List[Dict[str, Any]]:
     """
-    Parses the LotteryUSA '.../year' pages.
+    Lottery.net year pages look like:
+        Tuesday
+        December 31, 2019
+          * 9
+          * 1
+          * 7
+          * 5   (Fireball)
 
-    We detect:
-      - Date line: "Friday, Feb 6, 2026"
-      - Next 3 single-digit lines are the Pick 3 digits
-      - Fireball appears as "FB : 6" or similar somewhere nearby
+    We extract 3 Pick3 digits + Fireball (4th digit), if present.
     """
     out: List[Dict[str, Any]] = []
     i = 0
+    while i < len(lines) - 6:
+        if lines[i] not in WEEKDAYS:
+            i += 1
+            continue
 
-    while i < len(lines):
-        m = DATE_LINE_RE.match(lines[i])
+        m = DATE_LINE_RE_2.match(lines[i + 1])
         if not m:
             i += 1
             continue
 
-        mon = m.group(2).title()
-        day = int(m.group(3))
-        year = int(m.group(4))
-        draw_date = datetime(year, MONTH_MAP[mon], day).strftime("%Y-%m-%d")
+        month_name = m.group(1)
+        day = int(m.group(2))
+        year = int(m.group(3))
 
-        # Look ahead for digits
+        month_num = MONTH_MAP_FULL.get(month_name)
+        if not month_num:
+            i += 1
+            continue
+
+        draw_date = datetime(year, month_num, day).strftime("%Y-%m-%d")
+
+        # collect the next 4 single-digit lines after the date block
         digits: List[int] = []
-        fb: Optional[int] = None
-
-        j = i + 1
-        while j < min(i + 30, len(lines)) and len(digits) < 3:
+        j = i + 2
+        while j < min(i + 40, len(lines)) and len(digits) < 4:
             if re.fullmatch(r"\d", lines[j]):
                 digits.append(int(lines[j]))
             j += 1
 
-        # Look ahead for FB
-        k = i + 1
-        while k < min(i + 60, len(lines)):
-            if "FB" in lines[k]:
-                mfb = re.search(r"FB\s*:?\s*(\d)", lines[k])
-                if mfb:
-                    fb = int(mfb.group(1))
-                break
-            k += 1
+        if len(digits) >= 3:
+            d1, d2, d3 = digits[0], digits[1], digits[2]
+            fb: Optional[int] = digits[3] if len(digits) >= 4 else None
 
-        if len(digits) == 3:
-            d1, d2, d3 = digits
             pick3_str = f"{d1}{d2}{d3}"
             sorted_str = "".join(sorted(pick3_str))
 
@@ -262,33 +272,49 @@ def parse_year_page(lines: List[str], draw_time: str, source_url: str) -> List[D
     return out
 
 
+def iter_year_urls(start_year: int, end_year: int) -> List[Tuple[int, str, str]]:
+    """
+    Returns list of (year, draw_time, url) for both MIDDAY and EVENING.
+    """
+    out: List[Tuple[int, str, str]] = []
+    for y in range(start_year, end_year + 1):
+        out.append((y, "MIDDAY", MIDDAY_YEAR_URL_TMPL.format(year=y)))
+        out.append((y, "EVENING", EVENING_YEAR_URL_TMPL.format(year=y)))
+    return out
+
+
 def main() -> None:
     start_dt = datetime.strptime(START_DATE, "%Y-%m-%d")
+    now = datetime.now()
+    start_year = start_dt.year
+    end_year = now.year
 
+    print(f"[ingest] START_DATE={START_DATE} (years {start_year}..{end_year})")
     os.makedirs("data", exist_ok=True)
+
     conn = sqlite3.connect(DB_PATH)
     init_db(conn)
 
-    midday_lines = fetch_lines(MIDDAY_YEAR_URL)
-    evening_lines = fetch_lines(EVENING_YEAR_URL)
-
-    rows: List[Dict[str, Any]] = []
-    rows.extend(parse_year_page(midday_lines, "MIDDAY", MIDDAY_YEAR_URL))
-    rows.extend(parse_year_page(evening_lines, "EVENING", EVENING_YEAR_URL))
+    all_rows: List[Dict[str, Any]] = []
+    for year, draw_time, url in iter_year_urls(start_year, end_year):
+        print(f"[ingest] fetching {draw_time} year={year}: {url}")
+        lines = fetch_lines(url)
+        parsed = parse_lotterynet_year_page(lines, draw_time, url)
+        all_rows.extend(parsed)
 
     # Filter by START_DATE
-    rows = [r for r in rows if datetime.strptime(r["draw_date"], "%Y-%m-%d") >= start_dt]
+    all_rows = [r for r in all_rows if datetime.strptime(r["draw_date"], "%Y-%m-%d") >= start_dt]
 
-    if not rows:
+    if not all_rows:
         raise SystemExit("Ingested 0 rows (source blocked or parsing changed).")
 
-    for r in rows:
+    for r in all_rows:
         upsert(conn, r)
 
     export_csv(conn, CSV_PATH)
     conn.close()
 
-    print(f"Done. Upserted {len(rows)} rows into {CSV_PATH} and {DB_PATH}.")
+    print(f"Done. Upserted {len(all_rows)} rows into {CSV_PATH} and {DB_PATH}.")
 
 
 if __name__ == "__main__":
