@@ -9,6 +9,7 @@ permissions:
 jobs:
   ingest:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -23,17 +24,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run one-time backfill
+      - name: Run full historical backfill
         env:
-          START_DATE: "2025-09-01"
+          # ⬇️ CHANGE THIS ONLY IF YOU WANT A DIFFERENT HISTORY DEPTH
+          START_DATE: "2010-01-01"
+
           DB_PATH: "data/pick3.sqlite"
           CSV_PATH: "data/pick3.csv"
-        run: python ingest_pick3.py
+        run: |
+          python ingest_pick3.py
 
       - name: Commit populated dataset
         run: |
           git config user.name "pick3-bot"
           git config user.email "pick3-bot@users.noreply.github.com"
           git add data/pick3.sqlite data/pick3.csv
-          git commit -m "Backfill Illinois Pick 3 dataset" || echo "No changes to commit"
+          git commit -m "Full historical backfill: Illinois Pick 3" || echo "No changes to commit"
           git push
