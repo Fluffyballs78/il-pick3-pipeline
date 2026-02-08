@@ -69,14 +69,80 @@ def init_db(conn: sqlite3.Connection) -> None:
     """)
     conn.commit()
 
-
-def get_latest_draw_id() -> int:
-    r = requests.get(IL_PICK3_RESULTS_URL, timeout=30)
+def url_exists(url: str) -> bool:
+    # Some sites block HEAD; GET is more reliable.
+    headers = {
+        "User-Agent": "Mozilla/5.0 (compatible; Pick3Bot/1.0; +https://github.com/)",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://www.illinoislottery.com/",
+    }
+    r = requests.get(url, headers=headers, timeout=30)
+    if r.status_code == 404:
+        return False
+    if r.status_code == 403:
+        # Still blocked — but this is now happening on draw pages, not the index.
+        # We'll treat it as "exists" to avoid false negatives, and rely on later parsing.
+        return True
     r.raise_for_status()
-    ids = [int(x) for x in re.findall(r"/dbg/results/pick3/draw/(\d+)", r.text)]
-    if not ids:
-        raise RuntimeError("No draw IDs found on the results page.")
-    return max(ids)
+    return True
+
+
+def get_latest_draw_id_fallback(start_hint: int) -> int:
+    """
+    Finds the latest draw_id by probing draw pages directly:
+    1) Exponential search to find an upper bound that returns 404.
+    2) Binary search to find the highest existing draw_id.
+    """
+    # 1) Exponential search for upper bound
+    low = start_hint
+    high = start_hint
+
+    # Move high forward until we find a non-existing page (404)
+    step = 1
+    while True:
+        test_id = high + step
+        if not url_exists(IL_PICK3_DRAW_URL_TMPL.format(draw_id=test_id)):
+            high = test_id
+            break
+        low = test_id
+        step *= 2  # double step size
+
+        # Safety cap to prevent runaway loops
+        if step > 8192:
+            high = low + step
+            break
+
+    # Now: low exists, high does not (or at least should not)
+    left = low
+    right = high
+
+    # 2) Binary search for last existing id
+    while left + 1 < right:
+        mid = (left + right) // 2
+        if url_exists(IL_PICK3_DRAW_URL_TMPL.format(draw_id=mid)):
+            left = mid
+        else:
+            right = mid
+
+    return left
+
+
+def get_latest_draw_id(conn: sqlite3.Connection) -> int:
+    """
+    Preferred approach:
+    - Use last ingested draw_id from DB as the probe hint (fast).
+    - If DB is empty, start near START_DRAW_ID and probe forward.
+    """
+    # Try to get last seen draw_id from DB (fastest)
+    cur = conn.execute("SELECT MAX(source_draw_id) FROM pick3_draws")
+    row = cur.fetchone()
+    last_id = row[0] if row and row[0] is not None else None
+
+    hint = int(last_id) if last_id is not None else START_DRAW_ID
+    return get_latest_draw_id_fallback(hint)
+
+
 
 
 def parse_draw(draw_id: int):
@@ -248,7 +314,7 @@ def main():
     conn = sqlite3.connect(DB_PATH)
     init_db(conn)
 
-    latest = get_latest_draw_id()
+latest = get_latest_draw_id(conn)
 
     if MODE == "backfill":
         start = START_DRAW_ID
