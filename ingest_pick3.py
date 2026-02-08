@@ -5,19 +5,17 @@ import json
 import hashlib
 import sqlite3
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, List
 
 import requests
 from bs4 import BeautifulSoup
 
-# LotteryUSA sources (include FB)
+# LotteryUSA pages (Midday + Evening)
 MIDDAY_YEAR_URL = "https://www.lotteryusa.com/illinois/midday-3/year"
 EVENING_YEAR_URL = "https://www.lotteryusa.com/illinois/daily-3/year"
 
 DB_PATH = os.getenv("DB_PATH", "data/pick3.sqlite")
 CSV_PATH = os.getenv("CSV_PATH", "data/pick3.csv")
-
-MODE = os.getenv("MODE", "daily")              # daily | backfill (same behavior; both just refresh recent history)
 START_DATE = os.getenv("START_DATE", "2025-09-01")  # inclusive, YYYY-MM-DD
 
 HEADERS = {
@@ -27,13 +25,15 @@ HEADERS = {
     "Connection": "keep-alive",
 }
 
-# Example: "Friday,  Feb 6, 2026"
+# Example: "Friday, Feb 6, 2026"
 DATE_LINE_RE = re.compile(
     r"^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s+([A-Za-z]{3})\s+(\d{1,2}),\s+(20\d{2})$",
     re.IGNORECASE,
 )
 
-MONTH_MAP = {m: i for i, m in enumerate(["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"], start=1)}
+MONTH_MAP = {m: i for i, m in enumerate(
+    ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], start=1
+)}
 
 
 def utc_now_iso() -> str:
@@ -46,6 +46,10 @@ def compute_checksum(draw_date: str, draw_time: str, d1: int, d2: int, d3: int, 
 
 
 def init_db(conn: sqlite3.Connection) -> None:
+    """
+    IMPORTANT: This schema has NO source_draw_id.
+    Primary key is (draw_date, draw_time).
+    """
     conn.execute("""
     CREATE TABLE IF NOT EXISTS pick3_draws (
         draw_date TEXT NOT NULL,
@@ -86,6 +90,7 @@ def init_db(conn: sqlite3.Connection) -> None:
 
 def upsert(conn: sqlite3.Connection, row: Dict[str, Any]) -> None:
     now = utc_now_iso()
+
     cur = conn.execute(
         "SELECT checksum, row_version, pick3_d1, pick3_d2, pick3_d3, fireball "
         "FROM pick3_draws WHERE draw_date=? AND draw_time=?",
@@ -103,8 +108,7 @@ def upsert(conn: sqlite3.Connection, row: Dict[str, Any]) -> None:
         """, (
             row["draw_date"], row["draw_time"], row["d1"], row["d2"], row["d3"], row["fireball"],
             row["pick3_str"], row["sorted_str"], row["has_double"], row["has_triple"], row["repeated_digit"], row["digit_counts"],
-            row["source_url"],
-            now, now, 1, row["checksum"]
+            row["source_url"], now, now, 1, row["checksum"]
         ))
         conn.commit()
         return
@@ -118,6 +122,7 @@ def upsert(conn: sqlite3.Connection, row: Dict[str, Any]) -> None:
         conn.commit()
         return
 
+    # Audit + Update
     conn.execute("""
         INSERT INTO pick3_audit (
             draw_date, draw_time, changed_at, old_checksum, new_checksum,
@@ -126,7 +131,10 @@ def upsert(conn: sqlite3.Connection, row: Dict[str, Any]) -> None:
     """, (
         row["draw_date"], row["draw_time"], now,
         old_checksum, row["checksum"],
-        json.dumps({"d1": od1, "d2": od2, "d3": od3, "fireball": ofb, "checksum": old_checksum}),
+        json.dumps({
+            "pick3_d1": od1, "pick3_d2": od2, "pick3_d3": od3,
+            "fireball": ofb, "checksum": old_checksum
+        }),
         json.dumps(row),
         "source mismatch / correction"
     ))
@@ -178,12 +186,12 @@ def fetch_lines(url: str) -> List[str]:
 
 def parse_year_page(lines: List[str], draw_time: str, source_url: str) -> List[Dict[str, Any]]:
     """
-    Parses LotteryUSA '.../year' pages which contain repeating blocks:
-      <weekday, Mon dd, yyyy>
-        * d1
-        * d2
-        * d3
-        * FB : x
+    Parses the LotteryUSA '.../year' pages.
+
+    We detect:
+      - Date line: "Friday, Feb 6, 2026"
+      - Next 3 single-digit lines are the Pick 3 digits
+      - Fireball appears as "FB : 6" or similar somewhere nearby
     """
     out: List[Dict[str, Any]] = []
     i = 0
@@ -199,20 +207,20 @@ def parse_year_page(lines: List[str], draw_time: str, source_url: str) -> List[D
         year = int(m.group(4))
         draw_date = datetime(year, MONTH_MAP[mon], day).strftime("%Y-%m-%d")
 
-        # Look ahead for digits + FB
+        # Look ahead for digits
         digits: List[int] = []
         fb: Optional[int] = None
 
         j = i + 1
-        while j < min(i + 25, len(lines)) and len(digits) < 3:
+        while j < min(i + 30, len(lines)) and len(digits) < 3:
             if re.fullmatch(r"\d", lines[j]):
                 digits.append(int(lines[j]))
             j += 1
 
+        # Look ahead for FB
         k = i + 1
-        while k < min(i + 40, len(lines)):
+        while k < min(i + 60, len(lines)):
             if "FB" in lines[k]:
-                # Could be "FB : 6" or "FB: 6"
                 mfb = re.search(r"FB\s*:?\s*(\d)", lines[k])
                 if mfb:
                     fb = int(mfb.group(1))
@@ -223,9 +231,11 @@ def parse_year_page(lines: List[str], draw_time: str, source_url: str) -> List[D
             d1, d2, d3 = digits
             pick3_str = f"{d1}{d2}{d3}"
             sorted_str = "".join(sorted(pick3_str))
+
             counts: Dict[str, int] = {str(x): 0 for x in range(10)}
             for d in (d1, d2, d3):
                 counts[str(d)] += 1
+
             has_triple = 1 if 3 in counts.values() else 0
             has_double = 1 if (2 in counts.values() and has_triple == 0) else 0
             repeated_digit = None
@@ -262,11 +272,11 @@ def main() -> None:
     midday_lines = fetch_lines(MIDDAY_YEAR_URL)
     evening_lines = fetch_lines(EVENING_YEAR_URL)
 
-    rows = []
+    rows: List[Dict[str, Any]] = []
     rows.extend(parse_year_page(midday_lines, "MIDDAY", MIDDAY_YEAR_URL))
     rows.extend(parse_year_page(evening_lines, "EVENING", EVENING_YEAR_URL))
 
-    # filter by START_DATE
+    # Filter by START_DATE
     rows = [r for r in rows if datetime.strptime(r["draw_date"], "%Y-%m-%d") >= start_dt]
 
     if not rows:
@@ -277,7 +287,8 @@ def main() -> None:
 
     export_csv(conn, CSV_PATH)
     conn.close()
-    print(f"Done. Upserted {len(rows)} rows from LotteryUSA into {CSV_PATH}.")
+
+    print(f"Done. Upserted {len(rows)} rows into {CSV_PATH} and {DB_PATH}.")
 
 
 if __name__ == "__main__":
