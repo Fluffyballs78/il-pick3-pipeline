@@ -24,20 +24,29 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Force reset dataset artifacts (backfill mode)
+        run: |
+          rm -f data/pick3.sqlite data/pick3.csv
+          ls -la data || true
+
       - name: Run full historical backfill
         env:
-          # ⬇️ CHANGE THIS ONLY IF YOU WANT A DIFFERENT HISTORY DEPTH
           START_DATE: "2010-01-01"
-
           DB_PATH: "data/pick3.sqlite"
           CSV_PATH: "data/pick3.csv"
         run: |
+          echo "[workflow] START_DATE=$START_DATE"
+          echo "[workflow] DB_PATH=$DB_PATH"
+          echo "[workflow] CSV_PATH=$CSV_PATH"
           python ingest_pick3.py
+          echo "[workflow] CSV line count:"
+          wc -l data/pick3.csv || true
 
       - name: Commit populated dataset
         run: |
           git config user.name "pick3-bot"
           git config user.email "pick3-bot@users.noreply.github.com"
           git add data/pick3.sqlite data/pick3.csv
+          git status
           git commit -m "Full historical backfill: Illinois Pick 3" || echo "No changes to commit"
           git push
