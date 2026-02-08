@@ -8,6 +8,9 @@ on:
     - cron: "10 04 * * *"
     - cron: "30 09 * * *"
 
+permissions:
+  contents: write
+
 jobs:
   ingest:
     runs-on: ubuntu-latest
