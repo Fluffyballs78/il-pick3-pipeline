@@ -40,12 +40,16 @@ MONTH_MAP_FULL = {
 #   December 31, 2025
 DATE_LINE_RE = re.compile(r"^([A-Za-z]+)\s+(\d{1,2}),\s+(20\d{2})$")
 
-# One-line combined format (newer pages):
+# One-line combined format (sometimes appears):
 #   Wednesday January 21, 2026   23571
 COMBINED_LINE_RE = re.compile(
     r"^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+"
     r"([A-Za-z]+)\s+(\d{1,2}),\s+(20\d{2})\b"
 )
+
+# ✅ NEW: matches digit lines like:
+# "2", "* 2", "• 2", "- 2"
+BULLET_DIGIT_RE = re.compile(r"^[\*\u2022\-\u2013\u2014]?\s*(\d)\s*$")
 
 
 def utc_now_iso() -> str:
@@ -236,12 +240,13 @@ def parse_lotterynet_year_page(lines: List[str], draw_time: str, source_url: str
             i += 1
             continue
 
-        # Collect next 4 single-digit lines after header: 3 pick digits + fireball
+        # Collect next 4 digits after header: 3 pick digits + fireball
         digits: List[int] = []
         j = header_idx + 1
-        while j < min(header_idx + 80, len(lines)) and len(digits) < 4:
-            if re.fullmatch(r"\d", lines[j]):
-                digits.append(int(lines[j]))
+        while j < min(header_idx + 120, len(lines)) and len(digits) < 4:
+            m = BULLET_DIGIT_RE.match(lines[j])
+            if m:
+                digits.append(int(m.group(1)))
             j += 1
 
         if len(digits) >= 3:
