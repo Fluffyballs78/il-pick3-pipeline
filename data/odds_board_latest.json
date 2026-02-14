@@ -1,0 +1,117 @@
+{
+  "last_observed_draw": {
+    "draw_date": "2026-02-14",
+    "draw_time": "MIDDAY",
+    "pick3": "212"
+  },
+  "next_draw_odds": {
+    "digits": [
+      {
+        "digit": 0,
+        "prob": 0.062201,
+        "score": -0.251856,
+        "drought_draws": 5,
+        "drought_bucket": "3-5",
+        "rate10": 0.2,
+        "rate25": 0.28,
+        "rate50": 0.22
+      },
+      {
+        "digit": 1,
+        "prob": 0.164979,
+        "score": 0.723588,
+        "drought_draws": 0,
+        "drought_bucket": "0-2",
+        "rate10": 0.5,
+        "rate25": 0.32,
+        "rate50": 0.3
+      },
+      {
+        "digit": 2,
+        "prob": 0.047685,
+        "score": -0.517612,
+        "drought_draws": 0,
+        "drought_bucket": "0-2",
+        "rate10": 0.3,
+        "rate25": 0.2,
+        "rate50": 0.24
+      },
+      {
+        "digit": 3,
+        "prob": 0.160799,
+        "score": 0.697928,
+        "drought_draws": 4,
+        "drought_bucket": "3-5",
+        "rate10": 0.3,
+        "rate25": 0.36,
+        "rate50": 0.3
+      },
+      {
+        "digit": 4,
+        "prob": 0.043092,
+        "score": -0.618902,
+        "drought_draws": 2,
+        "drought_bucket": "0-2",
+        "rate10": 0.1,
+        "rate25": 0.2,
+        "rate50": 0.28
+      },
+      {
+        "digit": 5,
+        "prob": 0.271608,
+        "score": 1.222131,
+        "drought_draws": 3,
+        "drought_bucket": "3-5",
+        "rate10": 0.2,
+        "rate25": 0.4,
+        "rate50": 0.4
+      },
+      {
+        "digit": 6,
+        "prob": 0.073509,
+        "score": -0.084818,
+        "drought_draws": 4,
+        "drought_bucket": "3-5",
+        "rate10": 0.2,
+        "rate25": 0.28,
+        "rate50": 0.26
+      },
+      {
+        "digit": 7,
+        "prob": 0.092285,
+        "score": 0.142651,
+        "drought_draws": 4,
+        "drought_bucket": "3-5",
+        "rate10": 0.3,
+        "rate25": 0.24,
+        "rate50": 0.34
+      },
+      {
+        "digit": 8,
+        "prob": 0.036532,
+        "score": -0.784044,
+        "drought_draws": 3,
+        "drought_bucket": "3-5",
+        "rate10": 0.1,
+        "rate25": 0.2,
+        "rate50": 0.24
+      },
+      {
+        "digit": 9,
+        "prob": 0.04731,
+        "score": -0.525502,
+        "drought_draws": 5,
+        "drought_bucket": "3-5",
+        "rate10": 0.3,
+        "rate25": 0.24,
+        "rate50": 0.18
+      }
+    ],
+    "top4": [
+      5,
+      1,
+      3,
+      7
+    ]
+  }
+}
