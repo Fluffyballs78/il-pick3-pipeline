@@ -11,7 +11,7 @@ import requests
 from bs4 import BeautifulSoup
 
 # =========================
-# SOURCE: Lottery.net (real year archives)
+# SOURCE: Lottery.net year archives (true history)
 # =========================
 MIDDAY_YEAR_URL_TMPL = "https://www.lottery.net/illinois/pick-3-midday/numbers/{year}"
 EVENING_YEAR_URL_TMPL = "https://www.lottery.net/illinois/pick-3-evening/numbers/{year}"
@@ -29,22 +29,23 @@ HEADERS = {
 
 WEEKDAYS = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
 
-# Two-line date format:
-#   December 31, 2019
-DATE_LINE_RE = re.compile(r"^([A-Za-z]+)\s+(\d{1,2}),\s+(20\d{2})$")
-
-# One-line combined format:
-#   Wednesday December 31, 2025 23528 ...
-COMBINED_LINE_RE = re.compile(
-    r"^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+"
-    r"([A-Za-z]+)\s+(\d{1,2}),\s+(20\d{2})\b"
-)
-
 MONTH_MAP_FULL = {
     "January": 1, "February": 2, "March": 3, "April": 4,
     "May": 5, "June": 6, "July": 7, "August": 8,
     "September": 9, "October": 10, "November": 11, "December": 12,
 }
+
+# Two-line date format (older pages):
+#   Wednesday
+#   December 31, 2025
+DATE_LINE_RE = re.compile(r"^([A-Za-z]+)\s+(\d{1,2}),\s+(20\d{2})$")
+
+# One-line combined format (newer pages):
+#   Wednesday January 21, 2026   23571
+COMBINED_LINE_RE = re.compile(
+    r"^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+"
+    r"([A-Za-z]+)\s+(\d{1,2}),\s+(20\d{2})\b"
+)
 
 
 def utc_now_iso() -> str:
@@ -57,10 +58,6 @@ def compute_checksum(draw_date: str, draw_time: str, d1: int, d2: int, d3: int, 
 
 
 def init_db(conn: sqlite3.Connection) -> None:
-    """
-    Schema has NO source_draw_id.
-    PK is (draw_date, draw_time).
-    """
     conn.execute("""
     CREATE TABLE IF NOT EXISTS pick3_draws (
         draw_date TEXT NOT NULL,
@@ -128,7 +125,6 @@ def upsert(conn: sqlite3.Connection, row: Dict[str, Any]) -> None:
 
     old_checksum, old_version, od1, od2, od3, ofb = existing
 
-    # unchanged: touch updated_at
     if old_checksum == row["checksum"]:
         conn.execute(
             "UPDATE pick3_draws SET updated_at=? WHERE draw_date=? AND draw_time=?",
@@ -137,7 +133,6 @@ def upsert(conn: sqlite3.Connection, row: Dict[str, Any]) -> None:
         conn.commit()
         return
 
-    # changed: audit + update row
     conn.execute("""
         INSERT INTO pick3_audit (
             draw_date, draw_time, changed_at, old_checksum, new_checksum,
@@ -184,81 +179,64 @@ def export_csv(conn: sqlite3.Connection, path: str) -> None:
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow([
-            "draw_date", "draw_time", "pick3_d1", "pick3_d2", "pick3_d3", "fireball",
-            "pick3_str", "sorted_str", "has_double", "has_triple", "repeated_digit", "digit_counts",
-            "source_url", "ingested_at", "updated_at", "row_version", "checksum"
+            "draw_date","draw_time","pick3_d1","pick3_d2","pick3_d3","fireball",
+            "pick3_str","sorted_str","has_double","has_triple","repeated_digit","digit_counts",
+            "source_url","ingested_at","updated_at","row_version","checksum"
         ])
         w.writerows(rows)
 
 
-def fetch_html(url: str) -> str:
-    # light retry
-    last_exc = None
-    for attempt in range(3):
-        try:
-            r = requests.get(url, headers=HEADERS, timeout=45)
-            r.raise_for_status()
-            return r.text
-        except Exception as e:
-            last_exc = e
-    raise last_exc  # type: ignore
-
-
-def html_to_lines(html: str) -> List[str]:
-    soup = BeautifulSoup(html, "lxml")
+def fetch_lines(url: str) -> List[str]:
+    r = requests.get(url, headers=HEADERS, timeout=45)
+    r.raise_for_status()
+    soup = BeautifulSoup(r.text, "lxml")
     text = soup.get_text("\n", strip=True)
     return [ln.strip() for ln in text.split("\n") if ln.strip()]
 
 
-def extract_draw_date_from_lines(lines: List[str], idx: int) -> Tuple[Optional[str], int]:
+def extract_draw_date(lines: List[str], idx: int) -> Tuple[Optional[str], int]:
     """
-    Returns (draw_date_yyyy_mm_dd, header_index_used)
-    Handles:
-      A) Two-line: weekday line then date line next
-      B) One-line: combined weekday + date
+    Supports:
+      A) One-line: 'Wednesday January 21, 2026 23571'
+      B) Two-line: 'Wednesday' then 'January 21, 2026'
+    Returns (YYYY-MM-DD, header_index_used).
     """
-    # Case B: combined
-    m2 = COMBINED_LINE_RE.match(lines[idx])
-    if m2:
-        month_name = m2.group(2)
-        day = int(m2.group(3))
-        year = int(m2.group(4))
-        month_num = MONTH_MAP_FULL.get(month_name)
+    # One-line combined
+    m = COMBINED_LINE_RE.match(lines[idx])
+    if m:
+        month = m.group(2)
+        day = int(m.group(3))
+        year = int(m.group(4))
+        month_num = MONTH_MAP_FULL.get(month)
         if month_num:
-            d = datetime(year, month_num, day).strftime("%Y-%m-%d")
-            return d, idx
+            return datetime(year, month_num, day).strftime("%Y-%m-%d"), idx
         return None, idx
 
-    # Case A: weekday + date next line
+    # Two-line weekday + date next
     if lines[idx] in WEEKDAYS and idx + 1 < len(lines):
-        m = DATE_LINE_RE.match(lines[idx + 1])
-        if m:
-            month_name = m.group(1)
-            day = int(m.group(2))
-            year = int(m.group(3))
-            month_num = MONTH_MAP_FULL.get(month_name)
+        m2 = DATE_LINE_RE.match(lines[idx + 1])
+        if m2:
+            month = m2.group(1)
+            day = int(m2.group(2))
+            year = int(m2.group(3))
+            month_num = MONTH_MAP_FULL.get(month)
             if month_num:
-                d = datetime(year, month_num, day).strftime("%Y-%m-%d")
-                return d, idx + 1
+                return datetime(year, month_num, day).strftime("%Y-%m-%d"), idx + 1
 
     return None, idx
 
 
 def parse_lotterynet_year_page(lines: List[str], draw_time: str, source_url: str) -> List[Dict[str, Any]]:
-    """
-    Extract 3 pick digits + fireball (4th digit if present).
-    Works even when year pages render the header as one line.
-    """
     out: List[Dict[str, Any]] = []
     i = 0
 
     while i < len(lines) - 6:
-        draw_date, header_idx = extract_draw_date_from_lines(lines, i)
+        draw_date, header_idx = extract_draw_date(lines, i)
         if not draw_date:
             i += 1
             continue
 
-        # Collect next 4 single-digit lines after header
+        # Collect next 4 single-digit lines after header: 3 pick digits + fireball
         digits: List[int] = []
         j = header_idx + 1
         while j < min(header_idx + 80, len(lines)) and len(digits) < 4:
@@ -298,7 +276,6 @@ def parse_lotterynet_year_page(lines: List[str], draw_time: str, source_url: str
                 "checksum": compute_checksum(draw_date, draw_time, d1, d2, d3, fb),
             })
 
-        # move forward
         i += 1
 
     return out
@@ -315,15 +292,12 @@ def iter_year_urls(start_year: int, end_year: int) -> List[Tuple[int, str, str]]
 def main() -> None:
     start_dt = datetime.strptime(START_DATE, "%Y-%m-%d")
     now = datetime.now()
-
-    # IMPORTANT:
-    # fetch from start_year through current year, plus "current year" (already included)
     start_year = start_dt.year
     end_year = now.year
 
     print(f"[ingest] START_DATE={START_DATE} (years {start_year}..{end_year})")
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
+    os.makedirs(os.path.dirname(DB_PATH) or "data", exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     init_db(conn)
 
@@ -331,10 +305,9 @@ def main() -> None:
 
     for year, draw_time, url in iter_year_urls(start_year, end_year):
         print(f"[ingest] fetching {draw_time} year={year}: {url}")
-        html = fetch_html(url)
-        lines = html_to_lines(html)
-
+        lines = fetch_lines(url)
         parsed = parse_lotterynet_year_page(lines, draw_time, url)
+        print(f"[ingest] parsed {len(parsed)} rows for {draw_time} {year}")
         all_rows.extend(parsed)
 
     # Filter by START_DATE (inclusive)
@@ -349,7 +322,7 @@ def main() -> None:
     export_csv(conn, CSV_PATH)
     conn.close()
 
-    print(f"[ingest] Done. Parsed {len(all_rows)} rows. Wrote {CSV_PATH} and {DB_PATH}.")
+    print(f"[ingest] Done. Upserted {len(all_rows)} rows into {CSV_PATH} and {DB_PATH}.")
 
 
 if __name__ == "__main__":
