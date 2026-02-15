@@ -1,17 +1,15 @@
-**Last draw:** 6375 (Pick3 + Fireball)  
-**Next draw:** 2026-02-15 MIDDAY  
+**Last draw:** 6375 (6,3,7 + Fireball 5)  
+**Next draw:** 2026-02-15 MIDDAY
 
 - **Top 4 digits:** 0, 3, 5, 6  
-  *Rationale:* Strong combined probability and recent activity; 0 and 3 have lowest drought (0-2), and both 5 and 6 show stable momentum.
+  Momentum strong on 3, 5, 6 with recent hits; 0 shows solid probability and low drought (2 draws), good for coverage.
 
-- **Lean play:** 0, 3, 5, 6  
+- **Lean play:** 0, 3, 5, 6
 
-- **Chaos add-on:**  
-  - 9 (drought=5, undervalued momentum with decent recent hit at r10=0.4)  
-  - 4 (drought=3, could break the streak with low recent drop)  
+- **Chaos add-on:** 9, 8  
+  Both have high drought (9=5 draws, 8=4 draws) indicating potential overdue bounce; 9 shows recent stronger momentum at r10=0.4.
 
-- **Fade list:**  
-  - 2 (lowest probability 0.041, low recent hits)  
-  - 1 (low momentum with moderate drought, less likely next)  
+- **Fade list:** 2, 4  
+  Low probability & recent drought combined with weak recent momentum make these less attractive plays currently.
 
-*Play smart, these are probability signals, not certainties.*
+*Play smart. Probabilities favor these odds-based choices.*
