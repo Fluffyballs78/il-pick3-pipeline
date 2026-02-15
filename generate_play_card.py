@@ -9,10 +9,13 @@ MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
 
 ODDS_PATH = os.getenv("ODDS_PATH", "data/odds_board_latest.json")
 OUT_PATH = os.getenv("OUT_PATH", "data/next_draw_report.md")
+LIVE_SUMMARY_PATH = os.getenv("LIVE_SUMMARY_PATH", "data/live_summary.json")
+
 
 def load_odds():
     with open(ODDS_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
+
 
 def call_openai(prompt: str) -> str:
     url = "https://api.openai.com/v1/responses"
@@ -50,6 +53,20 @@ def call_openai(prompt: str) -> str:
 
     return "⚠️ Rate limit exceeded after retries."
 
+
+def load_live_summary():
+    if not os.path.exists(LIVE_SUMMARY_PATH):
+        print("[play_card] live_summary.json not found — skipping live section.")
+        return None
+
+    try:
+        with open(LIVE_SUMMARY_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"[play_card] failed to load live_summary.json: {e}")
+        return None
+
+
 def main():
     odds = load_odds()
 
@@ -63,7 +80,8 @@ def main():
     for d in digits:
         lines.append(
             f"{d['digit']}: prob={d['prob']}, drought={d['drought_draws']}, "
-            f"bucket={d['drought_bucket']}, r10={d['rate10']}, r25={d['rate25']}, r50={d['rate50']}"
+            f"bucket={d['drought_bucket']}, r10={d['rate10']}, "
+            f"r25={d['rate25']}, r50={d['rate50']}"
         )
 
     prompt = textwrap.dedent(f"""
@@ -103,10 +121,21 @@ def main():
 
     report = call_openai(prompt)
 
+    final_output = report
+
+    # Append live summary JSON if it exists
+    live_summary = load_live_summary()
+    if live_summary:
+        final_output += "\n\n---\n\n## Live Performance (Rolling)\n\n"
+        final_output += "```json\n"
+        final_output += json.dumps(live_summary, indent=2)
+        final_output += "\n```\n"
+
     with open(OUT_PATH, "w", encoding="utf-8") as f:
-        f.write(report + "\n")
+        f.write(final_output + "\n")
 
     print(f"[play_card] wrote {OUT_PATH}")
+
 
 if __name__ == "__main__":
     main()
