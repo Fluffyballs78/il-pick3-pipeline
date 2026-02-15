@@ -58,12 +58,21 @@ jobs:
           OUT_DIR: "data"
         run: |
           python build_odds_board.py
+          
+      - name: Generate ChatGPT play card
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: "gpt-4.1-mini"
+          ODDS_PATH: "data/odds_board_latest.json"
+          OUT_PATH: "data/next_draw_report.md"
+        run: |
+          python generate_play_card.py
 
       - name: Commit & push if changed
         run: |
           git config user.name "pick3-bot"
           git config user.email "pick3-bot@users.noreply.github.com"
-          git add data/pick3.sqlite data/pick3.csv data/odds_board_latest.json data/model_drought_lift.json data/model_backtest_top4_summary.json
+          git add data/pick3.sqlite data/pick3.csv data/odds_board_latest.json data/model_drought_lift.json data/model_backtest_top4_summary.json data/next_draw_report.md
           git diff --cached --quiet && echo "No changes" && exit 0
-          git commit -m "Daily ingest + odds board"
+          git commit -m "Daily ingest + odds board + play card
           git push
