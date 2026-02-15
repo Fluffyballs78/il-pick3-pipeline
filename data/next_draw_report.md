@@ -1,15 +1,21 @@
-**Last draw:** 6375 (6,3,7 + Fireball 5)  
-**Next draw:** 2026-02-15 MIDDAY
+Illinois Pick 3 Assistant Play Card
 
-- **Top 4 digits:** 0, 3, 5, 6  
-  Momentum strong on 3, 5, 6 with recent hits; 0 shows solid probability and low drought (2 draws), good for coverage.
+- Last draw: 6375 (Pick3 + Fireball) on 2026-02-14 EVENING  
+- Next expected draw: 2026-02-15 MIDDAY
 
-- **Lean play:** 0, 3, 5, 6
+Top 4 digits: 0, 3, 5, 6  
+- These digits show strong combined probability and recent momentum with low drought (0–2) buckets, indicating consistent appearance.
 
-- **Chaos add-on:** 9, 8  
-  Both have high drought (9=5 draws, 8=4 draws) indicating potential overdue bounce; 9 shows recent stronger momentum at r10=0.4.
+Lean play:  
+- 0, 3, 5, 6
 
-- **Fade list:** 2, 4  
-  Low probability & recent drought combined with weak recent momentum make these less attractive plays currently.
+Chaos add-on:  
+- 9 (high drought at 5 draws, potentially overdue)  
+- 4 (moderate drought at 3, possible rebound)
 
-*Play smart. Probabilities favor these odds-based choices.*
+Fade list:  
+- 2 (low probability 0.041, low momentum)  
+- 1 (modest probability but low recent hits, less promising)
+
+Summary:  
+- Focus on top 4 digits for coverage, but consider adding 9 or 4 for volatility. Avoid 2 and 1 due to weak signals.
