@@ -1,15 +1,13 @@
-**Last Draw:** 2026-02-14 MIDDAY: 2122  
-**Next Draw:** 2026-02-14 EVENING
+**Last draw:** 2122 (MIDDAY 2026-02-14)  
+**Next draw:** EVENING 2026-02-14  
 
-Top 4 Digits: 0, 1, 3, 5  
-*Rationale:* Strong momentum and low-to-moderate drought levels on 0 and 1 keep them front-runner picks. Digits 3 and 5 show good momentum combined with moderate drought, signaling potential rebounds.
+**Top 4 digits:** 0, 1, 3, 5  
+*Rationale: Strong combined probabilities with moderate drought on 3 & 5 adding momentum; 0 & 1 offer solid recent frequency.*
 
-- **Lean play:** 0, 1, 3, 5  
-- **Chaos add-on:**  
-  - 7 (high drought = 4, undervalued momentum r50=0.42)  
-  - 6 (high drought = 4, decent momentum r25=0.4)  
-- **Fade list:**  
-  - 2 (very low probability 0.045, no drought to support comeback)  
-  - 4 (low probability 0.029 and modest drought but low momentum)  
+- **Lean play:** 0 1 3 5  
+- **Chaos add-on:** 6, 7  
+  - Both have decent momentum (drought 4) and moderate probabilities, offering potential value outside the top 4.  
+- **Fade list:** 2, 4  
+  - Lowest probabilities and low momentum; digit 2 just showed and has low odds, digit 4 is underperforming recently.  
 
-Play smart and manage risk accordingly.
+*Play smart and manage risk; no certainties implied.*

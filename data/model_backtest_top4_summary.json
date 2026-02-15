@@ -9,6 +9,22 @@
     "3": 889,
     "4": 32
   },
+  "regime_analysis": {
+    "counts": {
+      "0": 2264,
+      "1": 5550,
+      "2": 3187,
+      "3": 529,
+      "4": 16
+    },
+    "two_plus_hit_rate_by_regime": {
+      "0": 0.4368374558303887,
+      "1": 0.4540540540540541,
+      "2": 0.45811107624725445,
+      "3": 0.44234404536862004,
+      "4": 0.6875
+    }
+  },
   "hit_count_mean": 1.4197124545297073,
   "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
   "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier",
