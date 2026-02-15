@@ -32,21 +32,12 @@ jobs:
         shell: bash
         run: |
           if [ -f data/pick3.sqlite ]; then
-            LAST=$(python << 'PY'
-import sqlite3
-con = sqlite3.connect("data/pick3.sqlite")
-cur = con.cursor()
-cur.execute("select max(draw_date) from pick3_draws")
-v = cur.fetchone()[0]
-print(v if v else "")
-con.close()
-PY
-)
+            LAST=$(python -c "import sqlite3; con=sqlite3.connect('data/pick3.sqlite'); cur=con.cursor(); cur.execute('select max(draw_date) from pick3_draws'); v=cur.fetchone()[0]; con.close(); print(v if v else '')")
           else
             LAST=""
           fi
 
-          if [ -z "$LAST" ]; then
+          if [ -z \"$LAST\" ]; then
             echo "start_date=2010-01-01" >> $GITHUB_OUTPUT
           else
             echo "start_date=$LAST" >> $GITHUB_OUTPUT
