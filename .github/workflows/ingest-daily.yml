@@ -58,54 +58,7 @@ jobs:
       - name: Run repeat analysis SQL
         shell: bash
         run: |
-          python - << 'PY'
-import sqlite3
-
-con = sqlite3.connect("data/pick3.sqlite")
-cur = con.cursor()
-
-query = """
-WITH ordered AS (
-  SELECT
-    draw_date,
-    draw_time,
-    pick3_d1, pick3_d2, pick3_d3, fireball,
-    ROW_NUMBER() OVER (
-      ORDER BY draw_date,
-               CASE WHEN draw_time='MIDDAY' THEN 0 ELSE 1 END
-    ) AS rn
-  FROM pick3_draws
-),
-pairs AS (
-  SELECT
-    a.rn,
-    a.pick3_d1, a.pick3_d2, a.pick3_d3, a.fireball,
-    b.pick3_d1 AS n_d1,
-    b.pick3_d2 AS n_d2,
-    b.pick3_d3 AS n_d3,
-    b.fireball AS n_fb
-  FROM ordered a
-  JOIN ordered b ON b.rn = a.rn + 1
-)
-SELECT
-  SUM(
-    (CASE WHEN n_d1 IN (pick3_d1,pick3_d2,pick3_d3,fireball) THEN 1 ELSE 0 END) +
-    (CASE WHEN n_d2 IN (pick3_d1,pick3_d2,pick3_d3,fireball) THEN 1 ELSE 0 END) +
-    (CASE WHEN n_d3 IN (pick3_d1,pick3_d2,pick3_d3,fireball) THEN 1 ELSE 0 END) +
-    (CASE WHEN n_fb IN (pick3_d1,pick3_d2,pick3_d3,fireball) THEN 1 ELSE 0 END)
-  ) AS total_repeats,
-  COUNT(*) AS total_transitions
-FROM pairs;
-"""
-
-cur.execute(query)
-result = cur.fetchone()
-
-print("TOTAL REPEATS:", result[0])
-print("TOTAL TRANSITIONS:", result[1])
-
-con.close()
-PY
+          python -c "import sqlite3; con=sqlite3.connect('data/pick3.sqlite'); cur=con.cursor(); cur.execute(\"WITH ordered AS ( SELECT draw_date, draw_time, pick3_d1, pick3_d2, pick3_d3, fireball, ROW_NUMBER() OVER ( ORDER BY draw_date, CASE WHEN draw_time='MIDDAY' THEN 0 ELSE 1 END ) AS rn FROM pick3_draws ), pairs AS ( SELECT a.rn, a.pick3_d1, a.pick3_d2, a.pick3_d3, a.fireball, b.pick3_d1 AS n_d1, b.pick3_d2 AS n_d2, b.pick3_d3 AS n_d3, b.fireball AS n_fb FROM ordered a JOIN ordered b ON b.rn = a.rn + 1 ) SELECT SUM( (CASE WHEN n_d1 IN (pick3_d1,pick3_d2,pick3_d3,fireball) THEN 1 ELSE 0 END) + (CASE WHEN n_d2 IN (pick3_d1,pick3_d2,pick3_d3,fireball) THEN 1 ELSE 0 END) + (CASE WHEN n_d3 IN (pick3_d1,pick3_d2,pick3_d3,fireball) THEN 1 ELSE 0 END) + (CASE WHEN n_fb IN (pick3_d1,pick3_d2,pick3_d3,fireball) THEN 1 ELSE 0 END) ) AS total_repeats, COUNT(*) AS total_transitions FROM pairs;\"); r=cur.fetchone(); con.close(); print('TOTAL REPEATS:', r[0]); print('TOTAL TRANSITIONS:', r[1])"
 
       - name: Build odds board + backtest summary
         env:
