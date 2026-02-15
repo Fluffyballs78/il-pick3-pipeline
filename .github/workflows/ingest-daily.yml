@@ -71,6 +71,16 @@ jobs:
           DB_PATH: "data/pick3.sqlite"
           OUT_DIR: "data"
         run: |
+          python build_odds_board.py
+
+      - name: Update live performance log
+        env:
+          DB_PATH: "data/pick3.sqlite"
+          OUT_DIR: "data"
+          LIVE_LOG_PATH: "data/live_performance_log.csv"
+        run: |
+          python live_performance_log.py
+
       - name: Generate ChatGPT play card
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -86,18 +96,11 @@ jobs:
           git config user.name pick3-bot
           git config user.email pick3-bot@users.noreply.github.com
 
-          git add data/pick3.sqlite \
-                  data/pick3.csv \
-                  data/odds_board_latest.json \
-                  data/model_drought_lift.json \
-                  data/model_repeat_regime.json \
-                  data/model_backtest_top4_summary.json \
-                  data/next_draw_report.md
+          git add data/pick3.sqlite                   data/pick3.csv                   data/odds_board_latest.json                   data/model_drought_lift.json                   data/model_repeat_regime.json                   data/model_backtest_top4_summary.json                   data/next_draw_report.md                   data/live_performance_log.csv
 
           git diff --cached --quiet && echo "No changes" && exit 0
 
           git commit -m "Daily ingest + odds board + play card"
-          
+
           git pull --rebase origin main
-          
           git push origin main
