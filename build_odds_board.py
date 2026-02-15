@@ -439,6 +439,10 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
     dist = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
     total_preds = 0
 
+    # Track regime frequency and 2+ performance
+    regime_counts = {r: 0 for r in range(5)}
+    regime_2plus_hits = {r: 0 for r in range(5)}
+
     # We can only compute a regime starting at t>=1 (needs t-1 and t)
     for t in range(1, len(rows)):
         # predict draw t using info up to t-1
@@ -460,6 +464,11 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
         hits = sum(1 for d in board["top4"] if pres[d] == 1)
         dist[min(4, hits)] += 1
         total_preds += 1
+
+        # Regime tracking
+        regime_counts[regime_r] += 1
+        if hits >= 2:
+            regime_2plus_hits[regime_r] += 1
 
         # now update rolling/drought state based on observed draw t
         for digit in range(10):
@@ -489,6 +498,13 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
         "top4_hit_rate_any": top4_hit_rate_any,
         "top4_hit_rate_2plus": top4_hit_rate_2plus,
         "distribution_next_draw_hits_in_top4": dist,
+        "regime_analysis": {
+            "counts": regime_counts,
+            "two_plus_hit_rate_by_regime": {
+                r: (regime_2plus_hits[r] / regime_counts[r]) if regime_counts[r] else None
+                for r in range(5)
+            }
+        },
         "hit_count_mean": (
             (0*dist[0] + 1*dist[1] + 2*dist[2] + 3*dist[3] + 4*dist[4]) / total_preds
         ) if total_preds else None,
