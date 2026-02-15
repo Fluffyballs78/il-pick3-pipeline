@@ -86,6 +86,7 @@ jobs:
                   data/pick3.csv \
                   data/odds_board_latest.json \
                   data/model_drought_lift.json \
+                  data/model_repeat_regime.json \
                   data/model_backtest_top4_summary.json \
                   data/next_draw_report.md
 
