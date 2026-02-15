@@ -1,13 +1,13 @@
-**Last draw:** 6375 (2026-02-14 EVENING)  
-**Next draw:** 2026-02-15 MIDDAY  
+**Last draw: 6375 (EVENING 2026-02-14)  
+Next expected draw: MIDDAY 2026-02-15**
 
 - **Top 4 digits:** 0, 3, 5, 6  
-  *Strong recent probability momentum in these digits with low drought; good balance of frequency and freshness.*  
+  *Strong momentum on 0 and 3 with solid probabilities; 5 and 6 stay consistently active with no drought.*
 
-- **Lean play:** 0, 3, 5, 6  
+- **Lean play:** 0, 3, 5, 6
 
-- **Chaos add-on:** 9, 4  
-  *9 has longest drought (5) suggesting overdue; 4 also high drought (3) and low recent hits, potential rebound.*  
+- **Chaos add-on:** 4, 9  
+  *4 and 9 have longer droughts (3 and 5 draws) and low recent hits—potential for rebound and undervalued by current odds.*
 
 - **Fade list:** 2, 1  
-  *Lowest combined probability and weak recent momentum; not showing signs of bounce-back soon.*
+  *Lowest probabilities and little momentum; minimal recent impact and less likely to appear next draw.*
