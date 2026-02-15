@@ -2,12 +2,13 @@
 **Next draw:** EVENING 2026-02-14  
 
 **Top 4 digits:** 0, 1, 3, 5  
-*Rationale: Strong combined probabilities with moderate drought on 3 & 5 adding momentum; 0 & 1 offer solid recent frequency.*
+- Strong momentum on 0 and 1 with very low drought; 3 and 5 have solid probability despite moderate drought, showing recovery potential.
 
-- **Lean play:** 0 1 3 5  
-- **Chaos add-on:** 6, 7  
-  - Both have decent momentum (drought 4) and moderate probabilities, offering potential value outside the top 4.  
-- **Fade list:** 2, 4  
-  - Lowest probabilities and low momentum; digit 2 just showed and has low odds, digit 4 is underperforming recently.  
+**Play Card:**  
+- *Lean play:* 0, 1, 3, 5  
+- *Chaos add-on:* 7, 9  
+  - 7 and 9 both have high drought (4) and show potential undervalued momentum especially 9 with improving r10 at 0.4. Could break out.  
+- *Fade list:* 2, 4  
+  - 2 has very low probability and no drought sign; 4 is similarly low-probability with moderate drought but weak momentum signals.  
 
-*Play smart and manage risk; no certainties implied.*
+*Note: Play based on probabilities, no guarantees.*
