@@ -1,4 +1,4 @@
-name: Ingest IL Pick 3 (Daily)
+name: Ingest IL Pick 3 (Backfill)
 
 on:
   schedule:
