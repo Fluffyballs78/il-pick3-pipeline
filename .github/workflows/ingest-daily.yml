@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -93,4 +95,7 @@ jobs:
           git diff --cached --quiet && echo "No changes" && exit 0
 
           git commit -m "Daily ingest + odds board + play card"
-          git push
+          
+          git pull --rebase origin main
+          
+          git push origin main
