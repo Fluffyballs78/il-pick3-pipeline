@@ -112,7 +112,6 @@ def render_live_summary_md(summary: Dict[str, Any]) -> str:
     lines.append("| Metric | Value |")
     lines.append("|---|---:|")
     lines.append(f"| Any hit (≥1 of Top-4) | **{_fmt_pct(any_hit)}** |")
-    # avg_hits could be a float (0–4)
     lines.append(f"| Avg hits per draw (0–4) | **{_fmt_num(avg_hits, 2) if avg_hits is not None else '—'}** |")
     lines.append(f"| 0 hits | {_fmt_pct(zero)} |")
     lines.append(f"| 1 hit | {_fmt_pct(one)} |")
@@ -132,13 +131,10 @@ def render_live_summary_md(summary: Dict[str, Any]) -> str:
             ma = m.get("avg_hits_in_top4")
             ma_fmt = _fmt_num(ma, 2) if ma is not None else "—"
             notes = m.get("notes", "")
-            # keep notes short
             if isinstance(notes, str) and len(notes) > 90:
                 notes = notes[:87] + "..."
             lines.append(f"| `{name}` | {mh} | {ma_fmt} | {notes} |")
 
-    # If the expected fields aren't present, still provide the raw JSON for debugging (small, optional)
-    # but keep it tucked away to stay mobile-friendly.
     has_expected = any(
         k in overall for k in [
             "hit_rate_any_top4", "avg_hits_in_top4",
@@ -153,8 +149,44 @@ def render_live_summary_md(summary: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def render_live_prompt_block(summary: Dict[str, Any]) -> str:
+    """Very small prompt block to keep tokens low."""
+    window = summary.get("window", {}) if isinstance(summary, dict) else {}
+    overall = summary.get("overall", {}) if isinstance(summary, dict) else {}
+    updated = summary.get("last_updated_utc") or summary.get("updated_utc") or "—"
+
+    draws = window.get("draws", "—")
+    start = window.get("start_date", "—")
+    end = window.get("end_date", "—")
+
+    any_hit = overall.get("hit_rate_any_top4")
+    avg_hits = overall.get("avg_hits_in_top4")
+
+    guidance = ""
+    try:
+        h = float(any_hit)
+        if h >= 0.75:
+            guidance = "Live performance is strong: keep chaos list tighter (1 digit)."
+        elif h >= 0.60:
+            guidance = "Live performance is decent: normal chaos (1–2 digits)."
+        else:
+            guidance = "Live performance is weak: widen chaos (2 digits) and emphasize uncertainty."
+    except Exception:
+        guidance = "Use live performance as context if available; keep uncertainty language appropriate."
+
+    return textwrap.dedent(f"""
+    Live performance context (rolling):
+    - last updated: {updated}
+    - window: {draws} draws ({start} → {end})
+    - Top-4 any-hit rate (≥1): {_fmt_pct(any_hit)}
+    - Avg Top-4 hits per draw: {_fmt_num(avg_hits, 2) if avg_hits is not None else '—'}
+    - guidance: {guidance}
+    """).strip()
+
+
 def main():
     odds = load_odds()
+    live_summary = load_live_summary()
 
     last_draw = odds.get("last_observed_draw", {})
     next_expected = odds.get("next_expected_draw", {})
@@ -168,6 +200,10 @@ def main():
             f"{d['digit']}: prob={d['prob']}, drought={d['drought_draws']}, "
             f"bucket={d['drought_bucket']}, r10={d['rate10']}, r25={d['rate25']}, r50={d['rate50']}"
         )
+
+    live_prompt = ""
+    if live_summary:
+        live_prompt = "\n\n" + render_live_prompt_block(live_summary) + "\n"
 
     prompt = textwrap.dedent(f"""
     You are my Illinois Pick 3 assistant. I play the draw as FOUR digits:
@@ -185,6 +221,7 @@ def main():
       * Fade list: 1–2 digits to avoid (lowest combined signal) with rationale
     - Keep it mobile-friendly. Use bullets. No long essay.
     - Do NOT claim certainty or guaranteed wins. This is probability-based.
+    - If live performance context is provided, use it to calibrate tone and the size of the chaos add-on list.
 
     Last observed draw:
     - date: {last_draw.get('draw_date')}
@@ -201,14 +238,13 @@ def main():
     {top4}
 
     Digit board (0–9):
-    {chr(10).join(lines)}
+    {chr(10).join(lines)}{live_prompt}
     """).strip()
 
     report = call_openai(prompt)
 
     final_output = report
 
-    live_summary = load_live_summary()
     if live_summary:
         final_output += render_live_summary_md(live_summary)
 
