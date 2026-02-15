@@ -19,24 +19,38 @@ def call_openai(prompt: str) -> str:
         "Authorization": f"Bearer {OPENAI_API_KEY}",
         "Content-Type": "application/json",
     }
+
     payload = {
         "model": MODEL,
         "input": prompt,
+        "max_output_tokens": 400,
     }
 
-    r = requests.post(url, headers=headers, json=payload, timeout=60)
-    r.raise_for_status()
-    data = r.json()
+    for attempt in range(3):
+        r = requests.post(url, headers=headers, json=payload, timeout=60)
 
-    # Responses API returns "output" items; simplest extraction:
-    # We scan for first text block.
-    for item in data.get("output", []):
-        for c in item.get("content", []):
-            if c.get("type") == "output_text":
-                return c.get("text", "").strip()
+        if r.status_code == 429:
+            import time
+            wait = 5 * (attempt + 1)
+            print(f"[play_card] Rate limited. Waiting {wait}s...")
+            time.sleep(wait)
+            continue
 
-    # Fallback: stringify if structure changes
-    return json.dumps(data, indent=2)
+        if r.status_code >= 400:
+            print(f"[play_card] OpenAI error: {r.status_code}")
+            print(r.text)
+            return "⚠️ OpenAI API error. See workflow logs."
+
+        data = r.json()
+
+        for item in data.get("output", []):
+            for c in item.get("content", []):
+                if c.get("type") == "output_text":
+                    return c.get("text", "").strip()
+
+        return "⚠️ Unexpected OpenAI response format."
+
+    return "⚠️ Rate limit exceeded after retries."
 
 def main():
     odds = load_odds()
