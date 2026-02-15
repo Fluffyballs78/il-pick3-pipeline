@@ -13,16 +13,16 @@
         "4": 32
       }
     },
-    "cond_m5_in_regime4": {
-      "two_plus_hit_rate": 0.4515849644898666,
+    "balanced_lambda_0_15": {
+      "two_plus_hit_rate": 0.4510653040013858,
       "distribution_hits_in_pick": {
         "0": 1319,
-        "1": 5013,
-        "2": 4290,
-        "3": 892,
-        "4": 32
+        "1": 5019,
+        "2": 4282,
+        "3": 893,
+        "4": 33
       },
-      "rule": "use m=5 only when regime_r == 4; otherwise m=4"
+      "rule": "use m=4 always; add balance penalty: score -= 0.15 * Var(p_i in set)"
     }
   },
   "distribution_next_draw_hits_in_top4": {
@@ -50,7 +50,7 @@
   },
   "hit_count_mean": 1.4197124545297073,
   "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
-  "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier",
+  "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier. Includes simulation of balance penalty refinement.",
   "structural_conditioning": {
     "enabled": true,
     "regime_definition": "prev_repeats = |set(t-1) \u2229 set(t)| using 4-digit digit-sets",
