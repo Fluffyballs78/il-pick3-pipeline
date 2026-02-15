@@ -33,7 +33,7 @@
     "digits": [
       {
         "digit": 0,
-        "prob": 0.207185,
+        "prob": 0.207091,
         "score": 0.905512,
         "drought_draws": 1,
         "drought_bucket": "0-2",
@@ -44,8 +44,8 @@
       },
       {
         "digit": 1,
-        "prob": 0.144295,
-        "score": 0.54376,
+        "prob": 0.144578,
+        "score": 0.546174,
         "drought_draws": 0,
         "drought_bucket": "0-2",
         "rate10": 0.6,
@@ -55,8 +55,8 @@
       },
       {
         "digit": 2,
-        "prob": 0.045214,
-        "score": -0.616689,
+        "prob": 0.045303,
+        "score": -0.614275,
         "drought_draws": 0,
         "drought_bucket": "0-2",
         "rate10": 0.3,
@@ -66,7 +66,7 @@
       },
       {
         "digit": 3,
-        "prob": 0.166321,
+        "prob": 0.166245,
         "score": 0.68582,
         "drought_draws": 4,
         "drought_bucket": "3-5",
@@ -77,7 +77,7 @@
       },
       {
         "digit": 4,
-        "prob": 0.028975,
+        "prob": 0.028962,
         "score": -1.061663,
         "drought_draws": 2,
         "drought_bucket": "0-2",
@@ -88,7 +88,7 @@
       },
       {
         "digit": 5,
-        "prob": 0.126888,
+        "prob": 0.12683,
         "score": 0.4152,
         "drought_draws": 3,
         "drought_bucket": "3-5",
@@ -99,7 +99,7 @@
       },
       {
         "digit": 6,
-        "prob": 0.098889,
+        "prob": 0.098843,
         "score": 0.165892,
         "drought_draws": 4,
         "drought_bucket": "3-5",
@@ -110,7 +110,7 @@
       },
       {
         "digit": 7,
-        "prob": 0.080189,
+        "prob": 0.080152,
         "score": -0.043717,
         "drought_draws": 4,
         "drought_bucket": "3-5",
@@ -121,7 +121,7 @@
       },
       {
         "digit": 8,
-        "prob": 0.06389,
+        "prob": 0.063861,
         "score": -0.270933,
         "drought_draws": 3,
         "drought_bucket": "3-5",
@@ -132,7 +132,7 @@
       },
       {
         "digit": 9,
-        "prob": 0.038153,
+        "prob": 0.038135,
         "score": -0.78651,
         "drought_draws": 4,
         "drought_bucket": "3-5",
@@ -148,8 +148,8 @@
       3,
       5
     ],
-    "top4_2plus_score": 0.9224,
-    "top4_2plus_score_base": 0.868389,
+    "top4_2plus_score": 0.922455,
+    "top4_2plus_score_base": 0.868441,
     "order_by_prob": [
       0,
       3,
