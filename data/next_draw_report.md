@@ -1,13 +1,50 @@
-**Last draw: 6375 (EVENING 2026-02-14)  
-Next expected draw: MIDDAY 2026-02-15**
+# Illinois Pick 3 Play Card (NEXT DRAW)
 
-- **Top 4 digits:** 0, 3, 5, 6  
-  *Strong momentum on 0 and 3 with solid probabilities; 5 and 6 stay consistently active with no drought.*
+- Last draw: **6375** (2026-02-14 EVENING)
+- Next expected: **2026-02-15 MIDDAY**
+- Model confidence (simple): **Unknown** — Live hit-rate missing.
 
-- **Lean play:** 0, 3, 5, 6
+## Official digits (deterministic)
+- Top 4: **[0, 3, 5, 6]**
 
-- **Chaos add-on:** 4, 9  
-  *4 and 9 have longer droughts (3 and 5 draws) and low recent hits—potential for rebound and undervalued by current odds.*
 
-- **Fade list:** 2, 1  
-  *Lowest probabilities and little momentum; minimal recent impact and less likely to appear next draw.*
+- Last draw: 6375 (2026-02-14 EVENING)  
+- Next expected: 2026-02-15 MIDDAY  
+- Model confidence (simple): Unknown — Live hit-rate missing.
+
+### Rationale  
+Focus on the Top 4 digits with the highest modeled probability and lowest drought (0–2 draws dry). They consistently show stronger signals across short- and medium-term recency buckets, indicating more reliable coverage.
+
+### Lean play  
+Digits: [0, 3, 5, 6]  
+These represent the best combined probability and freshness metrics, forming a solid base set for the 4-digit pick.
+
+### Chaos add-on  
+Digits: [4, 9]  
+- 4 is currently drought-heavy (3 draws) but may bounce back soon given its low current probability—potential undervalued momentum.  
+- 9 has the longest drought (5 draws) and low frequency; a high chaos pick for potential surprise low-frequency hits.
+
+### Fade list  
+Digits: [2, 8]  
+- 2 exhibits very low overall probability and moderate drought, with weak recent hit rates.  
+- 8 shows a substantial drought (4 draws) and low bucket probabilities, making it a weaker candidate for coverage this draw.
+
+---
+
+## 📊 Live Performance (Rolling)
+
+- Last updated: `—`
+- Window: **—** draws (`—` → `—`)
+- Confidence (simple): **Unknown** — Live hit-rate missing.
+
+### Top-4 Coverage
+
+| Metric | Value |
+|---|---:|
+| Any hit (≥1 of Top-4) | **—** |
+| Avg hits per draw (0–4) | **—** |
+| 0 hits | — |
+| 1 hit | — |
+| 2 hits | — |
+| 3 hits | — |
+| 4 hits | — |
