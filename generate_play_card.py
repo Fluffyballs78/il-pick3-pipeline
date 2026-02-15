@@ -3,6 +3,7 @@ import os
 import textwrap
 import time
 import requests
+from typing import Any, Dict, Optional
 
 OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
 MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
@@ -12,7 +13,7 @@ OUT_PATH = os.getenv("OUT_PATH", "data/next_draw_report.md")
 LIVE_SUMMARY_PATH = os.getenv("LIVE_SUMMARY_PATH", "data/live_summary.json")
 
 
-def load_odds():
+def load_odds() -> Dict[str, Any]:
     with open(ODDS_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -54,7 +55,7 @@ def call_openai(prompt: str) -> str:
     return "⚠️ Rate limit exceeded after retries."
 
 
-def load_live_summary():
+def load_live_summary() -> Optional[Dict[str, Any]]:
     if not os.path.exists(LIVE_SUMMARY_PATH):
         print("[play_card] live_summary.json not found — skipping live section.")
         return None
@@ -65,6 +66,91 @@ def load_live_summary():
     except Exception as e:
         print(f"[play_card] failed to load live_summary.json: {e}")
         return None
+
+
+def _fmt_pct(x: Any) -> str:
+    try:
+        return f"{float(x) * 100:.1f}%"
+    except Exception:
+        return "—"
+
+
+def _fmt_num(x: Any, digits: int = 2) -> str:
+    try:
+        return f"{float(x):.{digits}f}"
+    except Exception:
+        return "—"
+
+
+def render_live_summary_md(summary: Dict[str, Any]) -> str:
+    """Render a compact, readable markdown summary.
+    Tries to be resilient if fields evolve.
+    """
+    window = summary.get("window", {}) if isinstance(summary, dict) else {}
+    overall = summary.get("overall", {}) if isinstance(summary, dict) else {}
+    models = summary.get("models", {}) if isinstance(summary, dict) else {}
+
+    draws = window.get("draws", "—")
+    start = window.get("start_date", "—")
+    end = window.get("end_date", "—")
+    updated = summary.get("last_updated_utc") or summary.get("updated_utc") or "—"
+
+    any_hit = overall.get("hit_rate_any_top4")
+    avg_hits = overall.get("avg_hits_in_top4")
+    zero = overall.get("zero_hit_rate")
+    one = overall.get("one_hit_rate")
+    two = overall.get("two_hit_rate")
+    three = overall.get("three_hit_rate")
+    four = overall.get("four_hit_rate")
+
+    lines = []
+    lines.append("\n\n---\n\n## 📊 Live Performance (Rolling)\n")
+    lines.append(f"- Last updated: `{updated}`")
+    lines.append(f"- Window: **{draws}** draws (`{start}` → `{end}`)\n")
+
+    lines.append("### Top-4 Coverage\n")
+    lines.append("| Metric | Value |")
+    lines.append("|---|---:|")
+    lines.append(f"| Any hit (≥1 of Top-4) | **{_fmt_pct(any_hit)}** |")
+    # avg_hits could be a float (0–4)
+    lines.append(f"| Avg hits per draw (0–4) | **{_fmt_num(avg_hits, 2) if avg_hits is not None else '—'}** |")
+    lines.append(f"| 0 hits | {_fmt_pct(zero)} |")
+    lines.append(f"| 1 hit | {_fmt_pct(one)} |")
+    lines.append(f"| 2 hits | {_fmt_pct(two)} |")
+    lines.append(f"| 3 hits | {_fmt_pct(three)} |")
+    lines.append(f"| 4 hits | {_fmt_pct(four)} |")
+
+    if isinstance(models, dict) and models:
+        lines.append("\n### Model Breakdown\n")
+        lines.append("| Model | Any hit | Avg hits | Notes |")
+        lines.append("|---|---:|---:|---|")
+        for name, m in models.items():
+            if not isinstance(m, dict):
+                lines.append(f"| `{name}` | — | — | — |")
+                continue
+            mh = _fmt_pct(m.get("hit_rate_any_top4"))
+            ma = m.get("avg_hits_in_top4")
+            ma_fmt = _fmt_num(ma, 2) if ma is not None else "—"
+            notes = m.get("notes", "")
+            # keep notes short
+            if isinstance(notes, str) and len(notes) > 90:
+                notes = notes[:87] + "..."
+            lines.append(f"| `{name}` | {mh} | {ma_fmt} | {notes} |")
+
+    # If the expected fields aren't present, still provide the raw JSON for debugging (small, optional)
+    # but keep it tucked away to stay mobile-friendly.
+    has_expected = any(
+        k in overall for k in [
+            "hit_rate_any_top4", "avg_hits_in_top4",
+            "zero_hit_rate", "one_hit_rate", "two_hit_rate", "three_hit_rate", "four_hit_rate"
+        ]
+    )
+    if not has_expected:
+        lines.append("\n<details><summary>Raw live_summary.json (for debugging)</summary>\n\n```json")
+        lines.append(json.dumps(summary, indent=2))
+        lines.append("```\n</details>\n")
+
+    return "\n".join(lines)
 
 
 def main():
@@ -80,8 +166,7 @@ def main():
     for d in digits:
         lines.append(
             f"{d['digit']}: prob={d['prob']}, drought={d['drought_draws']}, "
-            f"bucket={d['drought_bucket']}, r10={d['rate10']}, "
-            f"r25={d['rate25']}, r50={d['rate50']}"
+            f"bucket={d['drought_bucket']}, r10={d['rate10']}, r25={d['rate25']}, r50={d['rate50']}"
         )
 
     prompt = textwrap.dedent(f"""
@@ -123,13 +208,9 @@ def main():
 
     final_output = report
 
-    # Append live summary JSON if it exists
     live_summary = load_live_summary()
     if live_summary:
-        final_output += "\n\n---\n\n## Live Performance (Rolling)\n\n"
-        final_output += "```json\n"
-        final_output += json.dumps(live_summary, indent=2)
-        final_output += "\n```\n"
+        final_output += render_live_summary_md(live_summary)
 
     with open(OUT_PATH, "w", encoding="utf-8") as f:
         f.write(final_output + "\n")
