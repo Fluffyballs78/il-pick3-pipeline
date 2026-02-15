@@ -66,14 +66,11 @@ jobs:
         run: |
           python -c "import sqlite3; con=sqlite3.connect('data/pick3.sqlite'); cur=con.cursor(); cur.execute(\"WITH ordered AS ( SELECT draw_date, draw_time, pick3_d1, pick3_d2, pick3_d3, fireball, ROW_NUMBER() OVER ( ORDER BY draw_date, CASE WHEN draw_time='MIDDAY' THEN 0 ELSE 1 END ) AS rn FROM pick3_draws ), pairs AS ( SELECT a.rn, a.pick3_d1, a.pick3_d2, a.pick3_d3, a.fireball, b.pick3_d1 AS n_d1, b.pick3_d2 AS n_d2, b.pick3_d3 AS n_d3, b.fireball AS n_fb FROM ordered a JOIN ordered b ON b.rn = a.rn + 1 ) SELECT SUM( (CASE WHEN n_d1 IN (pick3_d1,pick3_d2,pick3_d3,fireball) THEN 1 ELSE 0 END) + (CASE WHEN n_d2 IN (pick3_d1,pick3_d2,pick3_d3,fireball) THEN 1 ELSE 0 END) + (CASE WHEN n_d3 IN (pick3_d1,pick3_d2,pick3_d3,fireball) THEN 1 ELSE 0 END) + (CASE WHEN n_fb IN (pick3_d1,pick3_d2,pick3_d3,fireball) THEN 1 ELSE 0 END) ) AS total_repeats, COUNT(*) AS total_transitions FROM pairs;\"); r=cur.fetchone(); con.close(); print('TOTAL REPEATS:', r[0]); print('TOTAL TRANSITIONS:', r[1])"
 
-      - name: Build odds board + backtest summary + drought hazard
+      - name: Build odds board + backtest summary
         env:
           DB_PATH: "data/pick3.sqlite"
           OUT_DIR: "data"
         run: |
-          python build_odds_board.py
-          python drought_hazard_analysis.py
-
       - name: Generate ChatGPT play card
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -89,11 +86,18 @@ jobs:
           git config user.name pick3-bot
           git config user.email pick3-bot@users.noreply.github.com
 
-          git add data/pick3.sqlite                   data/pick3.csv                   data/odds_board_latest.json                   data/model_drought_lift.json                   data/model_repeat_regime.json                   data/model_backtest_top4_summary.json                   data/drought_hazard.json                   data/next_draw_report.md
+          git add data/pick3.sqlite \
+                  data/pick3.csv \
+                  data/odds_board_latest.json \
+                  data/model_drought_lift.json \
+                  data/model_repeat_regime.json \
+                  data/model_backtest_top4_summary.json \
+                  data/next_draw_report.md
 
           git diff --cached --quiet && echo "No changes" && exit 0
 
           git commit -m "Daily ingest + odds board + play card"
-
+          
           git pull --rebase origin main
+          
           git push origin main
