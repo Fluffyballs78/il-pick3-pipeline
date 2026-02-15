@@ -169,9 +169,9 @@ def best_set_for_2plus(p_digits, m: int = 4, regime_r: int = 2, per_regime_multi
         base = p2plus_from_q(q, n_slots=n_slots)
         score = min(0.999999, base * M)
 
-        if pair_lambda and len(S) >= 2 and synergy_r:
+                if pair_lambda and len(S) >= 2 and synergy_r:
             s_sorted = sorted(S)
-            pair_sum = 0.0
+            pos_pair_sum = 0.0
             for a_i in range(len(s_sorted)):
                 for b_i in range(a_i + 1, len(s_sorted)):
                     i, j = s_sorted[a_i], s_sorted[b_i]
@@ -179,8 +179,11 @@ def best_set_for_2plus(p_digits, m: int = 4, regime_r: int = 2, per_regime_multi
                         key = f"{i}-{j}"
                     else:
                         key = f"{j}-{i}"
-                    pair_sum += float(synergy_r.get(key, 0.0))
-            score = score + (pair_lambda * pair_sum)
+                    v = float(synergy_r.get(key, 0.0))
+                    if v > 0.0:
+                        pos_pair_sum += v
+            # Penalize overly co-occurring (positively correlated) pairs to reduce 'all-miss' volatility
+            score = score - (pair_lambda * pos_pair_sum)
 
         if score > best_score:
             best_score = score
@@ -431,7 +434,7 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model, pair_model=None
     # Pair synergy (combo-level) model
     synergy = (pair_model or {}).get('synergy_loglift_by_regime', {r: {} for r in range(5)})
     PAIR_LAMBDA_BASE = 0.00
-    PAIR_LAMBDA_SYNERGY = 0.03  # starting point; will tune via backtest
+    PAIR_LAMBDA_SYNERGY = 0.03  # penalty strength; will tune via backtest
 
     # rolling deques per digit
     dq10 = [deque(maxlen=W10) for _ in range(10)]
@@ -646,7 +649,7 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model, pair_model=None
                 "struct_w_by_regime": STRUCT_W_VARIANT_B,
                 "pair_lambda": PAIR_LAMBDA_BASE,
             },
-            "pair_synergy_lambda_0_03": {
+            "pair_synergy_penalty_lambda_0_03": {
                 "two_plus_hit_rate": (syn_2plus / total_preds) if total_preds else None,
                 "distribution_hits_in_pick": dist_synergy,
                 "struct_w_by_regime": STRUCT_W_VARIANT_B,
@@ -665,7 +668,7 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model, pair_model=None
             (0*dist[0] + 1*dist[1] + 2*dist[2] + 3*dist[3] + 4*dist[4]) / total_preds
         ) if total_preds else None,
         "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
-        "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier. Includes simulation of pair synergy (digit co-occurrence) as a combo-level feature.",
+        "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier. Includes simulation of a pair-synergy penalty (avoid overly co-occurring digit pairs) as a combo-level refinement.",
         "structural_conditioning": {
             "enabled": True,
             "regime_definition": repeat_model.get("regime_definition"),
