@@ -175,7 +175,10 @@ def best_set_for_2plus(p_digits, m: int = 4, regime_r: int = 2, per_regime_multi
             for a_i in range(len(s_sorted)):
                 for b_i in range(a_i + 1, len(s_sorted)):
                     i, j = s_sorted[a_i], s_sorted[b_i]
-                    key = (i, j) if i < j else (j, i)
+                    if i < j:
+                        key = f"{i}-{j}"
+                    else:
+                        key = f"{j}-{i}"
                     pair_sum += float(synergy_r.get(key, 0.0))
             score = score + (pair_lambda * pair_sum)
 
@@ -331,10 +334,14 @@ def learn_pair_synergy_by_regime(rows):
             denom = (digit_probs[r][i] * digit_probs[r][j]) + eps
             synergy[r][(i, j)] = math.log((p_ij + eps) / denom)
 
+    # JSON-safe versions (tuple keys -> "i-j" strings)
+    synergy_json = {r: {f"{i}-{j}": v for (i, j), v in synergy[r].items()} for r in range(5)}
+    pair_probs_json = {r: {f"{i}-{j}": v for (i, j), v in pair_probs[r].items()} for r in range(5)}
+
     return {
-        "synergy_loglift_by_regime": synergy,
+        "synergy_loglift_by_regime": synergy_json,
         "digit_probs_by_regime": digit_probs,
-        "pair_probs_by_regime": pair_probs,
+        "pair_probs_by_regime": pair_probs_json,
         "counts": {"draws_by_regime": draws_by_regime},
         "definition": "synergy[r][i,j] = log( P(i&j present | regime r) / (P(i|r)*P(j|r)) )"
     }
