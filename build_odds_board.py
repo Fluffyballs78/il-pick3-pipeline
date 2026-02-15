@@ -2,6 +2,7 @@ import os
 import json
 import math
 import sqlite3
+import itertools
 from collections import deque
 from datetime import datetime, timedelta
 
@@ -118,6 +119,49 @@ def infer_next_draw_slot(last_date: str, last_time: str):
         return last_date, "EVENING"
     dt = datetime.strptime(last_date, "%Y-%m-%d") + timedelta(days=1)
     return dt.strftime("%Y-%m-%d"), "MIDDAY"
+
+# -----------------------------
+# 2+ scoring (optimize P(2+ hits))
+# -----------------------------
+def p2plus_from_q(q: float, n_slots: int = 4) -> float:
+    """
+    Approximate P(X>=2) where X~Binomial(n_slots, q).
+    Here, n_slots=4 because the project evaluates presence across 4 digits
+    (Pick3 digits + Fireball digit).
+    """
+    if q <= 0.0:
+        return 0.0
+    if q >= 1.0:
+        return 1.0
+    n = n_slots
+    # P(X>=2) = 1 - P(0) - P(1)
+    p0 = (1 - q) ** n
+    p1 = n * q * ((1 - q) ** (n - 1))
+    return max(0.0, min(1.0, 1.0 - p0 - p1))
+
+def best_set_for_2plus(p_digits, m: int = 4, regime_r: int = 2, per_regime_multiplier=None, n_slots: int = 4):
+    """
+    Brute-force all combos of size m (C(10, m) is tiny) and pick the set
+    maximizing P(2+ hits), with an optional regime multiplier.
+    """
+    M = 1.0
+    if per_regime_multiplier:
+        M = float(per_regime_multiplier.get(regime_r, 1.0))
+
+    best = None
+    best_score = -1.0
+    best_base = -1.0
+
+    for S in itertools.combinations(range(10), m):
+        q = sum(float(p_digits[d]) for d in S)
+        base = p2plus_from_q(q, n_slots=n_slots)
+        score = min(0.999999, base * M)
+        if score > best_score:
+            best_score = score
+            best_base = base
+            best = S
+
+    return list(best), best_score, best_base
 
 # -----------------------------
 # Structural conditioning (regime-learned)
@@ -265,6 +309,8 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
       repeat_bonus = log(multiplier[current_regime]) if digit was in last draw else 0
 
     Backtest Top4: how many of Top4 appear in the 4-digit draw (0..4).
+
+    NEW: Top4 selection is optimized for P(2+ hits), not "top-4 by prob".
     """
     lift = drought_model["bucket_lift"]
     repeat_mult = repeat_model["per_regime_multiplier"]
@@ -358,13 +404,26 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
             scores.append(score)
 
         probs = softmax(scores)
+
+        # Keep 'order' for diagnostics
         order = sorted(range(10), key=lambda x: probs[x], reverse=True)
-        top4 = order[:4]
+
+        # NEW: choose Top4 by maximizing P(2+ hits) under current regime
+        top4, top4_score, top4_score_base = best_set_for_2plus(
+            p_digits=probs,
+            m=4,
+            regime_r=regime_r,
+            per_regime_multiplier=repeat_mult,
+            n_slots=4
+        )
 
         return {
             "probs": probs,
             "scores": scores,
+            "order": order,
             "top4": top4,
+            "top4_2plus_score": top4_score,
+            "top4_2plus_score_base": top4_score_base,
             "droughts": droughts,
             "drought_buckets": buckets,
             "momentum": {"rate10": r10, "rate25": r25, "rate50": r50},
@@ -383,7 +442,6 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
     # We can only compute a regime starting at t>=1 (needs t-1 and t)
     for t in range(1, len(rows)):
         # predict draw t using info up to t-1
-        # current last draw is (t-1)
         last_draw_set = sets[t - 1]
 
         # regime uses overlap between (t-2) and (t-1) if available
@@ -404,7 +462,6 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
         total_preds += 1
 
         # now update rolling/drought state based on observed draw t
-        # (we update after measuring)
         for digit in range(10):
             val = pres[digit]
             push_digit(digit, val)
@@ -424,14 +481,19 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
         current_regime_r
     )
 
+    top4_hit_rate_any = (1.0 - dist[0] / total_preds) if total_preds else None
+    top4_hit_rate_2plus = ((dist[2] + dist[3] + dist[4]) / total_preds) if total_preds else None
+
     summary = {
         "total_predictions": total_preds,
-        "top4_hit_rate_any": (1.0 - dist[0] / total_preds) if total_preds else None,
+        "top4_hit_rate_any": top4_hit_rate_any,
+        "top4_hit_rate_2plus": top4_hit_rate_2plus,
         "distribution_next_draw_hits_in_top4": dist,
         "hit_count_mean": (
             (0*dist[0] + 1*dist[1] + 2*dist[2] + 3*dist[3] + 4*dist[4]) / total_preds
         ) if total_preds else None,
         "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
+        "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier",
         "structural_conditioning": {
             "enabled": True,
             "regime_definition": repeat_model.get("regime_definition"),
@@ -480,6 +542,9 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
                 for d in range(10)
             ],
             "top4": latest_board["top4"],
+            "top4_2plus_score": round(float(latest_board["top4_2plus_score"]), 6),
+            "top4_2plus_score_base": round(float(latest_board["top4_2plus_score_base"]), 6),
+            "order_by_prob": latest_board["order"],
         },
     }
 
@@ -513,7 +578,7 @@ def main():
         json.dump(latest, f, indent=2)
 
     print("[model] wrote outputs to data/")
-    print(f"[model] backtest total_predictions={summary['total_predictions']}, any_hit_rate={summary['top4_hit_rate_any']}")
+    print(f"[model] backtest total_predictions={summary['total_predictions']}, any_hit_rate={summary['top4_hit_rate_any']}, hit2plus_rate={summary['top4_hit_rate_2plus']}")
     print(f"[model] structural conditioning enabled: per-regime multipliers saved to data/model_repeat_regime.json")
 
 if __name__ == "__main__":
