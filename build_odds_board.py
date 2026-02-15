@@ -142,15 +142,8 @@ def p2plus_from_q(q: float, n_slots: int = 4) -> float:
 def best_set_for_2plus(p_digits, m: int = 4, regime_r: int = 2, per_regime_multiplier=None, n_slots: int = 4,
                       pair_synergy_by_regime=None, pair_lambda: float = 0.0):
     """
-    Brute-force all combos of size m (C(10, m) is tiny) and pick the set maximizing:
-
-        P(2+ hits) * regime_multiplier  +  pair_lambda * Σ synergy_loglift[regime_r][(i,j)] for i<j in set
-
-    Where synergy_loglift is learned from historical pair co-occurrence conditioned on regime.
-
-    Notes:
-    - pair_lambda should be small; this is a tie-breaker / second-order term.
-    - returns: (best_set_list, best_score, best_base_prob)
+    Select set maximizing:
+        P(2+) * regime_multiplier  -  pair_lambda * sum_positive_pair_synergy
     """
     M = 1.0
     if per_regime_multiplier:
@@ -169,21 +162,18 @@ def best_set_for_2plus(p_digits, m: int = 4, regime_r: int = 2, per_regime_multi
         base = p2plus_from_q(q, n_slots=n_slots)
         score = min(0.999999, base * M)
 
-                if pair_lambda and len(S) >= 2 and synergy_r:
-            s_sorted = sorted(S)
+        if pair_lambda > 0.0 and synergy_r:
             pos_pair_sum = 0.0
-            for a_i in range(len(s_sorted)):
-                for b_i in range(a_i + 1, len(s_sorted)):
-                    i, j = s_sorted[a_i], s_sorted[b_i]
-                    if i < j:
-                        key = f"{i}-{j}"
-                    else:
-                        key = f"{j}-{i}"
+            s_sorted = sorted(S)
+            for i_idx in range(len(s_sorted)):
+                for j_idx in range(i_idx + 1, len(s_sorted)):
+                    i = s_sorted[i_idx]
+                    j = s_sorted[j_idx]
+                    key = f"{min(i,j)}-{max(i,j)}"
                     v = float(synergy_r.get(key, 0.0))
                     if v > 0.0:
                         pos_pair_sum += v
-            # Penalize overly co-occurring (positively correlated) pairs to reduce 'all-miss' volatility
-            score = score - (pair_lambda * pos_pair_sum)
+            score -= pair_lambda * pos_pair_sum
 
         if score > best_score:
             best_score = score
@@ -266,88 +256,6 @@ def learn_repeat_regime_multipliers(rows):
         },
     }
 
-
-def learn_pair_synergy_by_regime(rows):
-    """
-    Learn pair co-occurrence "synergy" conditioned on the *prev-repeat regime* used for prediction.
-
-    For each draw t (t>=2), we define the regime used to predict t as:
-        regime_r = |set(t-2) ∩ set(t-1)|   (4-digit digit-sets)
-
-    Then we observe the set of digits in draw t and update:
-      - digit_present_counts[r][d]
-      - pair_cooccur_counts[r][(i,j)]  for i<j in the draw's digit-set
-
-    We compute, per regime:
-      p_d[r] = P(d present in draw | regime r)
-      p_ij[r] = P(i and j both present in draw | regime r)
-
-    And define synergy score (log-lift vs independence):
-      synergy[r][(i,j)] = log( (p_ij[r] + eps) / (p_i[r]*p_j[r] + eps) )
-
-    This is used as an additive combo feature when selecting the pick set.
-    """
-    if len(rows) < 3:
-        return {
-            "synergy_loglift_by_regime": {r: {} for r in range(5)},
-            "digit_probs_by_regime": {r: [0.0]*10 for r in range(5)},
-            "pair_probs_by_regime": {r: {} for r in range(5)},
-            "counts": {"draws_by_regime": {r: 0 for r in range(5)}},
-            "notes": "Not enough data to learn pair synergy."
-        }
-
-    sets = [digits_set_4(*r[2:6]) for r in rows]
-
-    draws_by_regime = {r: 0 for r in range(5)}
-    digit_present = {r: [0]*10 for r in range(5)}
-    pair_cooccur = {r: {} for r in range(5)}  # (i,j)->count
-
-    for t in range(2, len(sets)):
-        regime_r = len(sets[t-2].intersection(sets[t-1]))
-        regime_r = max(0, min(4, regime_r))
-        draws_by_regime[regime_r] += 1
-
-        s = sets[t]
-        for d in s:
-            digit_present[regime_r][d] += 1
-
-        s_sorted = sorted(s)
-        for a_i in range(len(s_sorted)):
-            for b_i in range(a_i+1, len(s_sorted)):
-                i, j = s_sorted[a_i], s_sorted[b_i]
-                key = (i, j)
-                pair_cooccur[regime_r][key] = pair_cooccur[regime_r].get(key, 0) + 1
-
-    eps = 1e-6
-    digit_probs = {r: [0.0]*10 for r in range(5)}
-    pair_probs = {r: {} for r in range(5)}
-    synergy = {r: {} for r in range(5)}
-
-    for r in range(5):
-        n = draws_by_regime[r]
-        if n <= 0:
-            continue
-
-        for d in range(10):
-            digit_probs[r][d] = digit_present[r][d] / n
-
-        for (i, j), c in pair_cooccur[r].items():
-            p_ij = c / n
-            pair_probs[r][(i, j)] = p_ij
-            denom = (digit_probs[r][i] * digit_probs[r][j]) + eps
-            synergy[r][(i, j)] = math.log((p_ij + eps) / denom)
-
-    # JSON-safe versions (tuple keys -> "i-j" strings)
-    synergy_json = {r: {f"{i}-{j}": v for (i, j), v in synergy[r].items()} for r in range(5)}
-    pair_probs_json = {r: {f"{i}-{j}": v for (i, j), v in pair_probs[r].items()} for r in range(5)}
-
-    return {
-        "synergy_loglift_by_regime": synergy_json,
-        "digit_probs_by_regime": digit_probs,
-        "pair_probs_by_regime": pair_probs_json,
-        "counts": {"draws_by_regime": draws_by_regime},
-        "definition": "synergy[r][i,j] = log( P(i&j present | regime r) / (P(i|r)*P(j|r)) )"
-    }
 def current_prev_repeat_regime(rows):
     """
     Determine the current regime r = |set(last-1) ∩ set(last)|.
@@ -413,7 +321,7 @@ def pass1_learn_drought_lift(rows):
 # -----------------------------
 # Backtest + latest odds board
 # -----------------------------
-def pass2_backtest_and_latest(rows, drought_model, repeat_model, pair_model=None):
+def pass2_backtest_and_latest(rows, drought_model, repeat_model):
     """
     Combined model, 4-digit event.
     Adds a *regime-learned repeat boost* for digits in the last draw:
@@ -430,11 +338,6 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model, pair_model=None
     BASE_STRUCT_W = 0.05
     STRUCT_W_VARIANT_A = {0: 0.03, 1: 0.05, 2: 0.07, 3: 0.05, 4: 0.05}
     STRUCT_W_VARIANT_B = {0: 0.02, 1: 0.05, 2: 0.09, 3: 0.04, 4: 0.08}
-
-    # Pair synergy (combo-level) model
-    synergy = (pair_model or {}).get('synergy_loglift_by_regime', {r: {} for r in range(5)})
-    PAIR_LAMBDA_BASE = 0.00
-    PAIR_LAMBDA_SYNERGY = 0.03  # penalty strength; will tune via backtest
 
     # rolling deques per digit
     dq10 = [deque(maxlen=W10) for _ in range(10)]
@@ -482,7 +385,7 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model, pair_model=None
         ln = len(dq)
         return (sumv / ln) if ln else 0.0
 
-    def odds_board_for_next_draw(t_index, last_draw_set, regime_r, struct_w=BASE_STRUCT_W, pair_lambda=0.0):
+    def odds_board_for_next_draw(t_index, last_draw_set, regime_r, struct_w=BASE_STRUCT_W):
         # momentum
         r10, r25, r50 = [], [], []
         for d in range(10):
@@ -535,9 +438,7 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model, pair_model=None
             m=4,
             regime_r=regime_r,
             per_regime_multiplier=repeat_mult,
-            n_slots=4,
-            pair_synergy_by_regime=synergy,
-            pair_lambda=pair_lambda
+            n_slots=4
         )
 
         return {
@@ -554,7 +455,6 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model, pair_model=None
                 "prev_repeat_regime": regime_r,
                 "regime_multiplier": m,
                 "repeat_bonus_log": repeat_bonus,
-                "pair_lambda": pair_lambda,
                 "last_draw_digits": sorted(list(last_draw_set)),
             }
         }
@@ -567,11 +467,13 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model, pair_model=None
     regime_counts = {r: 0 for r in range(5)}
     regime_2plus_hits = {r: 0 for r in range(5)}
 
-    # Strategy comparisons (pair synergy)
-    dist_base = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}  # pair_lambda=0
-    dist_synergy = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}  # pair_lambda=PAIR_LAMBDA_SYNERGY
+    # Strategy comparisons (structural weight schedules)
+    dist_base = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
+    dist_varA = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
+    dist_varB = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
     base_2plus = 0
-    syn_2plus = 0
+    varA_2plus = 0
+    varB_2plus = 0
 
     # We can only compute a regime starting at t>=1 (needs t-1 and t)
     for t in range(1, len(rows)):
@@ -586,9 +488,9 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model, pair_model=None
         regime_r = max(0, min(4, regime_r))
 
         # build board(s) for draw t
-        struct_w = STRUCT_W_VARIANT_B.get(regime_r, BASE_STRUCT_W)  # adopt best schedule so far
-        board_base = odds_board_for_next_draw(t, last_draw_set, regime_r, struct_w=struct_w, pair_lambda=PAIR_LAMBDA_BASE)
-        board_syn = odds_board_for_next_draw(t, last_draw_set, regime_r, struct_w=struct_w, pair_lambda=PAIR_LAMBDA_SYNERGY)
+        board_base = odds_board_for_next_draw(t, last_draw_set, regime_r, struct_w=BASE_STRUCT_W)
+        board_varA = odds_board_for_next_draw(t, last_draw_set, regime_r, struct_w=STRUCT_W_VARIANT_A.get(regime_r, BASE_STRUCT_W))
+        board_varB = odds_board_for_next_draw(t, last_draw_set, regime_r, struct_w=STRUCT_W_VARIANT_B.get(regime_r, BASE_STRUCT_W))
 
         # actual draw t presence
         pres = digits_present_4(*rows[t][2:6])
@@ -600,11 +502,17 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model, pair_model=None
         if hits_base >= 2:
             base_2plus += 1
 
-        # Pair synergy on
-        hits_syn = sum(1 for d in board_syn["top4"] if pres[d] == 1)
-        dist_synergy[min(4, hits_syn)] += 1
-        if hits_syn >= 2:
-            syn_2plus += 1
+        # Variant A
+        hits_a = sum(1 for d in board_varA["top4"] if pres[d] == 1)
+        dist_varA[min(4, hits_a)] += 1
+        if hits_a >= 2:
+            varA_2plus += 1
+
+        # Variant B
+        hits_b = sum(1 for d in board_varB["top4"] if pres[d] == 1)
+        dist_varB[min(4, hits_b)] += 1
+        if hits_b >= 2:
+            varB_2plus += 1
 
         total_preds += 1
 
@@ -631,8 +539,7 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model, pair_model=None
         len(rows),  # next index
         last_set,
         current_regime_r,
-        struct_w=STRUCT_W_VARIANT_B.get(current_regime_r, BASE_STRUCT_W),
-        pair_lambda=PAIR_LAMBDA_BASE
+        struct_w=BASE_STRUCT_W
     )
 
     top4_hit_rate_any = (1.0 - dist[0] / total_preds) if total_preds else None
@@ -643,17 +550,20 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model, pair_model=None
         "top4_hit_rate_any": top4_hit_rate_any,
         "top4_hit_rate_2plus": top4_hit_rate_2plus,
         "strategy_comparison": {
-            "base_no_pair_synergy": {
+            "base_struct_w_0_05": {
                 "two_plus_hit_rate": (base_2plus / total_preds) if total_preds else None,
                 "distribution_hits_in_pick": dist_base,
-                "struct_w_by_regime": STRUCT_W_VARIANT_B,
-                "pair_lambda": PAIR_LAMBDA_BASE,
+                "struct_w": BASE_STRUCT_W,
             },
-            "pair_synergy_penalty_lambda_0_03": {
-                "two_plus_hit_rate": (syn_2plus / total_preds) if total_preds else None,
-                "distribution_hits_in_pick": dist_synergy,
+            "variant_a": {
+                "two_plus_hit_rate": (varA_2plus / total_preds) if total_preds else None,
+                "distribution_hits_in_pick": dist_varA,
+                "struct_w_by_regime": STRUCT_W_VARIANT_A,
+            },
+            "variant_b": {
+                "two_plus_hit_rate": (varB_2plus / total_preds) if total_preds else None,
+                "distribution_hits_in_pick": dist_varB,
                 "struct_w_by_regime": STRUCT_W_VARIANT_B,
-                "pair_lambda": PAIR_LAMBDA_SYNERGY,
             }
         },
         "distribution_next_draw_hits_in_top4": dist,
@@ -668,7 +578,7 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model, pair_model=None
             (0*dist[0] + 1*dist[1] + 2*dist[2] + 3*dist[3] + 4*dist[4]) / total_preds
         ) if total_preds else None,
         "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
-        "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier. Includes simulation of a pair-synergy penalty (avoid overly co-occurring digit pairs) as a combo-level refinement.",
+        "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier. Includes simulation of regime-aware structural weighting.",
         "structural_conditioning": {
             "enabled": True,
             "regime_definition": repeat_model.get("regime_definition"),
@@ -737,8 +647,7 @@ def main():
 
     drought_model = pass1_learn_drought_lift(rows)
     repeat_model = learn_repeat_regime_multipliers(rows)
-    pair_model = learn_pair_synergy_by_regime(rows)
-    summary, latest = pass2_backtest_and_latest(rows, drought_model, repeat_model, pair_model)
+    summary, latest = pass2_backtest_and_latest(rows, drought_model, repeat_model)
 
     # Persist models + latest board
     with open(os.path.join(OUT_DIR, "model_drought_lift.json"), "w", encoding="utf-8") as f:
@@ -746,9 +655,6 @@ def main():
 
     with open(os.path.join(OUT_DIR, "model_repeat_regime.json"), "w", encoding="utf-8") as f:
         json.dump(repeat_model, f, indent=2)
-
-    with open(os.path.join(OUT_DIR, "model_pair_synergy.json"), "w", encoding="utf-8") as f:
-        json.dump(pair_model, f, indent=2)
 
     with open(os.path.join(OUT_DIR, "model_backtest_top4_summary.json"), "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2)
