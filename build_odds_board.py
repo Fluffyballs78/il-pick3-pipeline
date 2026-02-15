@@ -361,7 +361,7 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
         ln = len(dq)
         return (sumv / ln) if ln else 0.0
 
-    def odds_board_for_next_draw(t_index, last_draw_set, regime_r):
+    def odds_board_for_next_draw(t_index, last_draw_set, regime_r, m_pick=4):
         # momentum
         r10, r25, r50 = [], [], []
         for d in range(10):
@@ -411,7 +411,7 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
         # NEW: choose Top4 by maximizing P(2+ hits) under current regime
         top4, top4_score, top4_score_base = best_set_for_2plus(
             p_digits=probs,
-            m=4,
+            m=m_pick,
             regime_r=regime_r,
             per_regime_multiplier=repeat_mult,
             n_slots=4
@@ -421,8 +421,11 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
             "probs": probs,
             "scores": scores,
             "order": order,
-            "top4": top4,
+            "top_pick": top4,
+            "top_pick_size": m_pick,
+            "top4": top4 if m_pick==4 else None,
             "top4_2plus_score": top4_score,
+
             "top4_2plus_score_base": top4_score_base,
             "droughts": droughts,
             "drought_buckets": buckets,
@@ -443,6 +446,12 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
     regime_counts = {r: 0 for r in range(5)}
     regime_2plus_hits = {r: 0 for r in range(5)}
 
+    # Strategy comparison
+    dist_base = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}  # base: m=4 always
+    dist_cond = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}  # conditional: m=5 if regime==4 else m=4
+    base_2plus = 0
+    cond_2plus = 0
+
     # We can only compute a regime starting at t>=1 (needs t-1 and t)
     for t in range(1, len(rows)):
         # predict draw t using info up to t-1
@@ -455,19 +464,32 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
             regime_r = 0
         regime_r = max(0, min(4, regime_r))
 
-        # build board for draw t
-        board = odds_board_for_next_draw(t, last_draw_set, regime_r)
+        # build board(s) for draw t
+        board_base = odds_board_for_next_draw(t, last_draw_set, regime_r, m_pick=4)
+        m_cond = 5 if regime_r == 4 else 4
+        board_cond = odds_board_for_next_draw(t, last_draw_set, regime_r, m_pick=m_cond)
 
         # actual draw t presence
         pres = digits_present_4(*rows[t][2:6])
 
-        hits = sum(1 for d in board["top4"] if pres[d] == 1)
-        dist[min(4, hits)] += 1
+        # Base (m=4)
+        hits_base = sum(1 for d in board_base["top_pick"] if pres[d] == 1)
+        dist[min(4, hits_base)] += 1
+        dist_base[min(4, hits_base)] += 1
+        if hits_base >= 2:
+            base_2plus += 1
+
+        # Conditional (m=5 only in regime 4)
+        hits_cond = sum(1 for d in board_cond["top_pick"] if pres[d] == 1)
+        dist_cond[min(4, hits_cond)] += 1
+        if hits_cond >= 2:
+            cond_2plus += 1
+
         total_preds += 1
 
-        # Regime tracking
+        # Regime tracking (based on base strategy hits, for continuity)
         regime_counts[regime_r] += 1
-        if hits >= 2:
+        if hits_base >= 2:
             regime_2plus_hits[regime_r] += 1
 
         # now update rolling/drought state based on observed draw t
@@ -487,16 +509,28 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
     latest_board = odds_board_for_next_draw(
         len(rows),  # next index
         last_set,
-        current_regime_r
+        current_regime_r,
+        m_pick=4
     )
 
     top4_hit_rate_any = (1.0 - dist[0] / total_preds) if total_preds else None
-    top4_hit_rate_2plus = ((dist[2] + dist[3] + dist[4]) / total_preds) if total_preds else None
+    top4_hit_rate_2plus = (base_2plus / total_preds) if total_preds else None
 
     summary = {
         "total_predictions": total_preds,
         "top4_hit_rate_any": top4_hit_rate_any,
         "top4_hit_rate_2plus": top4_hit_rate_2plus,
+        "strategy_comparison": {
+            "base_m4": {
+                "two_plus_hit_rate": (base_2plus / total_preds) if total_preds else None,
+                "distribution_hits_in_pick": dist_base,
+            },
+            "cond_m5_in_regime4": {
+                "two_plus_hit_rate": (cond_2plus / total_preds) if total_preds else None,
+                "distribution_hits_in_pick": dist_cond,
+                "rule": "use m=5 only when regime_r == 4; otherwise m=4",
+            }
+        },
         "distribution_next_draw_hits_in_top4": dist,
         "regime_analysis": {
             "counts": regime_counts,
@@ -558,6 +592,8 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
                 for d in range(10)
             ],
             "top4": latest_board["top4"],
+            "top_pick": latest_board["top_pick"],
+            "top_pick_size": latest_board["top_pick_size"],
             "top4_2plus_score": round(float(latest_board["top4_2plus_score"]), 6),
             "top4_2plus_score_base": round(float(latest_board["top4_2plus_score_base"]), 6),
             "order_by_prob": latest_board["order"],
