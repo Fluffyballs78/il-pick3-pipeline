@@ -67,7 +67,7 @@ jobs:
           DB_PATH: "data/pick3.sqlite"
           OUT_DIR: "data"
         run: |
-          python build_odds_board.py
+          python drought_hazard_analysis.py
 
       - name: Generate ChatGPT play card
         env:
