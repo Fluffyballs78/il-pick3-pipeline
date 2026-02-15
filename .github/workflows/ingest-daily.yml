@@ -81,6 +81,14 @@ jobs:
         run: |
           python live_performance_log.py
 
+      - name: Build live summary
+        env:
+          OUT_DIR: "data"
+          LIVE_LOG_PATH: "data/live_performance_log.csv"
+          LIVE_SUMMARY_PATH: "data/live_summary.json"
+        run: |
+          python live_summary.py
+
       - name: Generate ChatGPT play card
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
