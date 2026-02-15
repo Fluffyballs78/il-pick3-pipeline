@@ -1,15 +1,16 @@
-**Last draw:** 2026-02-14 MIDDAY = 212  
-**Next draw:** 2026-02-14 EVENING (second draw of the day)
+**Last Draw:** 2122 (Midday, 2026-02-14)  
+**Next Draw:** Evening, 2026-02-14
 
-- **Top 4 digits:** 5, 1, 3, 7  
-  (Strong momentum in 5 and 1; digits 3 and 7 have moderate droughts suggesting potential rebounds)
+**Top 4 Digits:** 0, 3, 1, 5  
+- Strong momentum on 0, 3, 1, and 5 with low-to-moderate droughts; 0 shows high probability and recent activity.  
+- Digits 3 and 5 have moderate drought but solid recent returns, suggesting potential rebound.
 
-- **Lean play:** 5, 1, 3, 7
+**Play Card:**  
+- **Lean Play:** 0, 3, 1, 5  
+- **Chaos Add-on:** 7, 9  
+  - *7* and *9* have high drought (4 draws) combined with decent recent r10–r50 signals, may run under radar.  
+- **Fade List:** 2, 4  
+  - *2* has low probability and no drought (recently hit), making it less likely.  
+  - *4* shows low probability and moderate drought but weaker recent returns.
 
-- **Chaos add-on:** 9, 0  
-  (9 shows a high drought of 5 and may be undervalued; 0 also has a high drought of 5, worth a small play)
-
-- **Fade list:** 2, 4  
-  (Both low probability and low momentum recently; digit 2 just appeared last draw and 4 has a low r10) 
-
-*Play smart. Probability-based insights only.*
+Keep plays tight but consider chaos digits as opportunistic add-ons. Probability favors top digits but no guarantees.

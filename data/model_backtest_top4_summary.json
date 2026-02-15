@@ -1,13 +1,13 @@
 {
   "total_predictions": 11546,
-  "top4_hit_rate_any": 0.7837346267105492,
+  "top4_hit_rate_any": 0.8852416421271436,
   "distribution_next_draw_hits_in_top4": {
-    "0": 2497,
-    "1": 5916,
-    "2": 2842,
-    "3": 291
+    "0": 1325,
+    "1": 5008,
+    "2": 4285,
+    "3": 895,
+    "4": 33
   },
-  "notes": {
-    "hit_count_mean": 1.0802875454702927
-  }
+  "hit_count_mean": 1.4199722847739478,
+  "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)"
 }
