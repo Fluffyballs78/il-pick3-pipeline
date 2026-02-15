@@ -1,6 +1,9 @@
 name: Ingest IL Pick 3 (Daily)
 
 on:
+  schedule:
+    # Daily at 1:20 AM America/Chicago (07:20 UTC)
+    - cron: "20 7 * * *"
   workflow_dispatch:
 
 permissions:
@@ -24,25 +27,52 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run ingest
+      - name: Compute START_DATE from DB (fallback to 2010-01-01)
+        id: startdate
+        shell: bash
+        run: |
+          if [ -f data/pick3.sqlite ]; then
+            LAST=$(python << 'PY'
+import sqlite3
+con = sqlite3.connect("data/pick3.sqlite")
+cur = con.cursor()
+cur.execute("select max(draw_date) from pick3_draws")
+v = cur.fetchone()[0]
+print(v if v else "")
+con.close()
+PY
+)
+          else
+            LAST=""
+          fi
+
+          if [ -z "$LAST" ]; then
+            echo "start_date=2010-01-01" >> $GITHUB_OUTPUT
+          else
+            echo "start_date=$LAST" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run daily ingest
         env:
-          START_DATE: "2010-01-01"
+          START_DATE: ${{ steps.startdate.outputs.start_date }}
           DB_PATH: "data/pick3.sqlite"
           CSV_PATH: "data/pick3.csv"
         run: |
+          echo "[daily] START_DATE=$START_DATE"
           python ingest_pick3.py
 
-      - name: Run odds model
+      - name: Build odds board + backtest summary
         env:
           DB_PATH: "data/pick3.sqlite"
           OUT_DIR: "data"
         run: |
           python build_odds_board.py
 
-      - name: Commit changes
+      - name: Commit & push if changed
         run: |
           git config user.name "pick3-bot"
           git config user.email "pick3-bot@users.noreply.github.com"
-          git add data/*
-          git commit -m "Manual ingest + model run" || echo "No changes"
+          git add data/pick3.sqlite data/pick3.csv data/odds_board_latest.json data/model_drought_lift.json data/model_backtest_top4_summary.json
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git commit -m "Daily ingest + odds board"
           git push
