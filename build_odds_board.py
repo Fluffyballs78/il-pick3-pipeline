@@ -139,14 +139,10 @@ def p2plus_from_q(q: float, n_slots: int = 4) -> float:
     p1 = n * q * ((1 - q) ** (n - 1))
     return max(0.0, min(1.0, 1.0 - p0 - p1))
 
-def best_set_for_2plus(p_digits, m: int = 4, regime_r: int = 2, per_regime_multiplier=None, n_slots: int = 4, balance_lambda: float = 0.0):
+def best_set_for_2plus(p_digits, m: int = 4, regime_r: int = 2, per_regime_multiplier=None, n_slots: int = 4):
     """
     Brute-force all combos of size m (C(10, m) is tiny) and pick the set
-    maximizing:
-        P(2+ hits) * regime_multiplier  -  balance_lambda * Var(p_i in set)
-
-    balance_lambda nudges selection toward more *balanced* sets, which can
-    improve 2+ stability vs "one huge digit + weak tail".
+    maximizing P(2+ hits), with an optional regime multiplier.
     """
     M = 1.0
     if per_regime_multiplier:
@@ -155,29 +151,17 @@ def best_set_for_2plus(p_digits, m: int = 4, regime_r: int = 2, per_regime_multi
     best = None
     best_score = -1.0
     best_base = -1.0
-    best_var = None
 
     for S in itertools.combinations(range(10), m):
-        ps = [float(p_digits[d]) for d in S]
-        q = sum(ps)
-
+        q = sum(float(p_digits[d]) for d in S)
         base = p2plus_from_q(q, n_slots=n_slots)
         score = min(0.999999, base * M)
-
-        if balance_lambda and len(ps) > 1:
-            mean_p = q / len(ps)
-            var_p = sum((x - mean_p) ** 2 for x in ps) / len(ps)
-            score = score - (balance_lambda * var_p)
-        else:
-            var_p = 0.0
-
         if score > best_score:
             best_score = score
             best_base = base
-            best_var = var_p
             best = S
 
-    return list(best), best_score, best_base, best_var
+    return list(best), best_score, best_base
 
 # -----------------------------
 # Structural conditioning (regime-learned)
@@ -331,6 +315,11 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
     lift = drought_model["bucket_lift"]
     repeat_mult = repeat_model["per_regime_multiplier"]
 
+    # Structural repeat weight schedules (for strategy comparisons)
+    BASE_STRUCT_W = 0.05
+    STRUCT_W_VARIANT_A = {0: 0.03, 1: 0.05, 2: 0.07, 3: 0.05, 4: 0.05}
+    STRUCT_W_VARIANT_B = {0: 0.02, 1: 0.05, 2: 0.09, 3: 0.04, 4: 0.08}
+
     # rolling deques per digit
     dq10 = [deque(maxlen=W10) for _ in range(10)]
     dq25 = [deque(maxlen=W25) for _ in range(10)]
@@ -377,7 +366,7 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
         ln = len(dq)
         return (sumv / ln) if ln else 0.0
 
-    def odds_board_for_next_draw(t_index, last_draw_set, regime_r, m_pick=4, balance_lambda=0.0):
+    def odds_board_for_next_draw(t_index, last_draw_set, regime_r, struct_w=BASE_STRUCT_W):
         # momentum
         r10, r25, r50 = [], [], []
         for d in range(10):
@@ -415,7 +404,7 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
                 + 0.25 * z50[d]
                 + 0.15 * z10[d]
                 + 0.15 * drought_scores[d]
-                + 0.05 * struct  # small weight; the multiplier already reflects history
+                + struct_w * struct  # regime-aware weight (for strategy comparisons)
             )
             scores.append(score)
 
@@ -425,26 +414,21 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
         order = sorted(range(10), key=lambda x: probs[x], reverse=True)
 
         # NEW: choose Top4 by maximizing P(2+ hits) under current regime
-        top_pick, top_pick_score, top_pick_score_base, top_pick_var = best_set_for_2plus(
+        top4, top4_score, top4_score_base = best_set_for_2plus(
             p_digits=probs,
-            m=m_pick,
+            m=4,
             regime_r=regime_r,
             per_regime_multiplier=repeat_mult,
-            n_slots=4,
-            balance_lambda=balance_lambda
+            n_slots=4
         )
 
         return {
             "probs": probs,
             "scores": scores,
             "order": order,
-            "top_pick": top_pick,
-            "top_pick_size": m_pick,
-            "top4": top_pick if m_pick==4 else None,
-            "top4_2plus_score": top_pick_score,
-
-            "top4_2plus_score_base": top_pick_score_base,
-            "top_pick_balance_var": top_pick_var,
+            "top4": top4,
+            "top4_2plus_score": top4_score,
+            "top4_2plus_score_base": top4_score_base,
             "droughts": droughts,
             "drought_buckets": buckets,
             "momentum": {"rate10": r10, "rate25": r25, "rate50": r50},
@@ -464,11 +448,13 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
     regime_counts = {r: 0 for r in range(5)}
     regime_2plus_hits = {r: 0 for r in range(5)}
 
-    # Strategy comparison
-    dist_base = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}  # base: m=4 always
-    dist_cond = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}  # conditional: m=5 if regime==4 else m=4
+    # Strategy comparisons (structural weight schedules)
+    dist_base = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
+    dist_varA = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
+    dist_varB = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
     base_2plus = 0
-    cond_2plus = 0
+    varA_2plus = 0
+    varB_2plus = 0
 
     # We can only compute a regime starting at t>=1 (needs t-1 and t)
     for t in range(1, len(rows)):
@@ -483,29 +469,35 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
         regime_r = max(0, min(4, regime_r))
 
         # build board(s) for draw t
-        board_base = odds_board_for_next_draw(t, last_draw_set, regime_r, m_pick=4, balance_lambda=0.0)
-        # Balanced variant (m=4, adds balance penalty inside combo selection)
-        board_bal = odds_board_for_next_draw(t, last_draw_set, regime_r, m_pick=4, balance_lambda=0.15)
+        board_base = odds_board_for_next_draw(t, last_draw_set, regime_r, struct_w=BASE_STRUCT_W)
+        board_varA = odds_board_for_next_draw(t, last_draw_set, regime_r, struct_w=STRUCT_W_VARIANT_A.get(regime_r, BASE_STRUCT_W))
+        board_varB = odds_board_for_next_draw(t, last_draw_set, regime_r, struct_w=STRUCT_W_VARIANT_B.get(regime_r, BASE_STRUCT_W))
 
         # actual draw t presence
         pres = digits_present_4(*rows[t][2:6])
 
-        # Base (m=4)
-        hits_base = sum(1 for d in board_base["top_pick"] if pres[d] == 1)
+        # Base
+        hits_base = sum(1 for d in board_base["top4"] if pres[d] == 1)
         dist[min(4, hits_base)] += 1
         dist_base[min(4, hits_base)] += 1
         if hits_base >= 2:
             base_2plus += 1
 
-        # Balanced (lambda=0.15)
-        hits_bal = sum(1 for d in board_bal["top_pick"] if pres[d] == 1)
-        dist_cond[min(4, hits_bal)] += 1
-        if hits_bal >= 2:
-            cond_2plus += 1
+        # Variant A
+        hits_a = sum(1 for d in board_varA["top4"] if pres[d] == 1)
+        dist_varA[min(4, hits_a)] += 1
+        if hits_a >= 2:
+            varA_2plus += 1
+
+        # Variant B
+        hits_b = sum(1 for d in board_varB["top4"] if pres[d] == 1)
+        dist_varB[min(4, hits_b)] += 1
+        if hits_b >= 2:
+            varB_2plus += 1
 
         total_preds += 1
 
-        # Regime tracking (based on base strategy hits, for continuity)
+        # Regime tracking (based on BASE hits, for continuity)
         regime_counts[regime_r] += 1
         if hits_base >= 2:
             regime_2plus_hits[regime_r] += 1
@@ -528,8 +520,7 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
         len(rows),  # next index
         last_set,
         current_regime_r,
-        m_pick=4,
-        balance_lambda=0.0
+        struct_w=BASE_STRUCT_W
     )
 
     top4_hit_rate_any = (1.0 - dist[0] / total_preds) if total_preds else None
@@ -540,14 +531,20 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
         "top4_hit_rate_any": top4_hit_rate_any,
         "top4_hit_rate_2plus": top4_hit_rate_2plus,
         "strategy_comparison": {
-            "base_m4": {
+            "base_struct_w_0_05": {
                 "two_plus_hit_rate": (base_2plus / total_preds) if total_preds else None,
                 "distribution_hits_in_pick": dist_base,
+                "struct_w": BASE_STRUCT_W,
             },
-            "balanced_lambda_0_15": {
-                "two_plus_hit_rate": (cond_2plus / total_preds) if total_preds else None,
-                "distribution_hits_in_pick": dist_cond,
-                "rule": "use m=4 always; add balance penalty: score -= 0.15 * Var(p_i in set)",
+            "variant_a": {
+                "two_plus_hit_rate": (varA_2plus / total_preds) if total_preds else None,
+                "distribution_hits_in_pick": dist_varA,
+                "struct_w_by_regime": STRUCT_W_VARIANT_A,
+            },
+            "variant_b": {
+                "two_plus_hit_rate": (varB_2plus / total_preds) if total_preds else None,
+                "distribution_hits_in_pick": dist_varB,
+                "struct_w_by_regime": STRUCT_W_VARIANT_B,
             }
         },
         "distribution_next_draw_hits_in_top4": dist,
@@ -562,7 +559,7 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
             (0*dist[0] + 1*dist[1] + 2*dist[2] + 3*dist[3] + 4*dist[4]) / total_preds
         ) if total_preds else None,
         "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
-        "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier. Includes simulation of balance penalty refinement.",
+        "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier. Includes simulation of regime-aware structural weighting.",
         "structural_conditioning": {
             "enabled": True,
             "regime_definition": repeat_model.get("regime_definition"),
@@ -611,8 +608,6 @@ def pass2_backtest_and_latest(rows, drought_model, repeat_model):
                 for d in range(10)
             ],
             "top4": latest_board["top4"],
-            "top_pick": latest_board["top_pick"],
-            "top_pick_size": latest_board["top_pick_size"],
             "top4_2plus_score": round(float(latest_board["top4_2plus_score"]), 6),
             "top4_2plus_score_base": round(float(latest_board["top4_2plus_score_base"]), 6),
             "order_by_prob": latest_board["order"],
