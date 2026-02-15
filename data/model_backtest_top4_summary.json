@@ -1,58 +1,11 @@
 {
   "total_predictions": 11547,
-  "top4_hit_rate_any": 0.8855979908201265,
-  "top4_hit_rate_2plus": 0.4516324586472677,
-  "strategy_comparison": {
-    "base_struct_w_0_05": {
-      "two_plus_hit_rate": 0.4516324586472677,
-      "distribution_hits_in_pick": {
-        "0": 1321,
-        "1": 5011,
-        "2": 4294,
-        "3": 889,
-        "4": 32
-      },
-      "struct_w": 0.05
-    },
-    "variant_a": {
-      "two_plus_hit_rate": 0.45154585606651076,
-      "distribution_hits_in_pick": {
-        "0": 1321,
-        "1": 5012,
-        "2": 4295,
-        "3": 887,
-        "4": 32
-      },
-      "struct_w_by_regime": {
-        "0": 0.03,
-        "1": 0.05,
-        "2": 0.07,
-        "3": 0.05,
-        "4": 0.05
-      }
-    },
-    "variant_b": {
-      "two_plus_hit_rate": 0.4518056638087815,
-      "distribution_hits_in_pick": {
-        "0": 1322,
-        "1": 5008,
-        "2": 4296,
-        "3": 889,
-        "4": 32
-      },
-      "struct_w_by_regime": {
-        "0": 0.02,
-        "1": 0.05,
-        "2": 0.09,
-        "3": 0.04,
-        "4": 0.08
-      }
-    }
-  },
+  "top4_hit_rate_any": 0.8855113882393695,
+  "top4_hit_rate_2plus": 0.4518056638087815,
   "distribution_next_draw_hits_in_top4": {
-    "0": 1321,
-    "1": 5011,
-    "2": 4294,
+    "0": 1322,
+    "1": 5008,
+    "2": 4296,
     "3": 889,
     "4": 32
   },
@@ -65,16 +18,16 @@
       "4": 16
     },
     "two_plus_hit_rate_by_regime": {
-      "0": 0.4368374558303887,
+      "0": 0.4372791519434629,
       "1": 0.45423423423423426,
       "2": 0.4582810539523212,
-      "3": 0.44045368620037806,
+      "3": 0.44234404536862004,
       "4": 0.6875
     }
   },
-  "hit_count_mean": 1.4197627089287261,
+  "hit_count_mean": 1.419849311509483,
   "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
-  "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier. Includes simulation of regime-aware structural weighting.",
+  "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier, with regime-aware structural weighting (Variant B).",
   "structural_conditioning": {
     "enabled": true,
     "regime_definition": "prev_repeats = |set(t-1) \u2229 set(t)| using 4-digit digit-sets",
