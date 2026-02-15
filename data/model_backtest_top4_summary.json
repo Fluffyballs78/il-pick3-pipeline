@@ -1,15 +1,17 @@
 {
   "total_predictions": 11546,
-  "top4_hit_rate_any": 0.8856746925342109,
+  "top4_hit_rate_any": 0.8855880824527975,
+  "top4_hit_rate_2plus": 0.4515849644898666,
   "distribution_next_draw_hits_in_top4": {
-    "0": 1320,
-    "1": 5015,
-    "2": 4286,
-    "3": 892,
-    "4": 33
+    "0": 1321,
+    "1": 5011,
+    "2": 4293,
+    "3": 889,
+    "4": 32
   },
-  "hit_count_mean": 1.4199722847739478,
+  "hit_count_mean": 1.4197124545297073,
   "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
+  "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier",
   "structural_conditioning": {
     "enabled": true,
     "regime_definition": "prev_repeats = |set(t-1) \u2229 set(t)| using 4-digit digit-sets",
