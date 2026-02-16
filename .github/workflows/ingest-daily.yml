@@ -1,11 +1,24 @@
-name: Ingest IL Pick 3 (Daily)
+name: Ingest IL Pick 3 (Scheduled)
 
 on:
   schedule:
-    # 1:00 PM CST daily  -> 19:00 UTC
+    # GitHub Actions cron is UTC (no timezone support) and does NOT auto-adjust for DST.
+    #
+    # You asked for:
+    # - 1:00 PM America/Chicago
+    # - 9:45 PM America/Chicago
+    #
+    # To keep those local times correct year-round, we schedule BOTH CST and CDT equivalents.
+    #
+    # 1:00 PM CST  = 19:00 UTC
+    # 1:00 PM CDT  = 18:00 UTC
     - cron: "0 19 * * *"
-    # 9:45 PM CST daily -> 03:45 UTC (next day)
+    - cron: "0 18 * * *"
+    #
+    # 9:45 PM CST  = 03:45 UTC (next day)
+    # 9:45 PM CDT  = 02:45 UTC (next day)
     - cron: "45 3 * * *"
+    - cron: "45 2 * * *"
   workflow_dispatch:
 
 permissions:
@@ -51,7 +64,7 @@ jobs:
             echo "start_date=$LAST" >> $GITHUB_OUTPUT
           fi
 
-      - name: Run daily ingest
+      - name: Run ingest
         env:
           START_DATE: ${{ steps.startdate.outputs.start_date }}
           DB_PATH: "data/pick3.sqlite"
@@ -91,35 +104,16 @@ jobs:
         run: |
           python live_summary.py
 
-      - name: Generate ChatGPT play card
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_MODEL: "gpt-4.1-mini"
-          ODDS_PATH: "data/odds_board_latest.json"
-          OUT_PATH: "data/next_draw_report.md"
-        run: |
-          python generate_play_card.py
-
       - name: Commit & push if changed
         shell: bash
         run: |
           git config user.name pick3-bot
           git config user.email pick3-bot@users.noreply.github.com
 
-          git add \
-                  data/pick3.sqlite \
-                  data/pick3.csv \
-                  data/odds_board_latest.json \
-                  data/model_drought_lift.json \
-                  data/model_repeat_regime.json \
-                  data/model_backtest_top4_summary.json \
-                  data/next_draw_report.md \
-                  data/live_performance_log.csv \
-                  data/live_summary.json
+          git add data/
 
           git diff --cached --quiet && echo "No changes" && exit 0
 
-          git commit -m "Daily ingest + odds board + play card"
-
+          git commit -m "Scheduled ingest + state update"
           git pull --rebase origin main
           git push origin main
