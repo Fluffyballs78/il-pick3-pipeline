@@ -11548,4 +11548,4 @@ draw_date,draw_time,actual_pick3,actual_fireball,regime,struct_weight,top4,hits_
 2026-02-14,EVENING,637,5,2,0.09,0135,2,1,1
 2026-02-15,MIDDAY,200,9,0,0.02,0356,1,1,0
 2026-02-15,EVENING,420,2,0,0.02,0356,1,1,0
-2026-02-16T04:08:13Z,2026-02-16,MIDDAY,"[0, 3, 5, 6]",Unknown,Live hit-rate missing.,gpt-4.1-mini,,,
+2026-02-16T05:19:52Z,2026-02-16,MIDDAY,"[0, 3, 5, 6]",Unknown,Live hit-rate missing.,gpt-4.1-mini,,,

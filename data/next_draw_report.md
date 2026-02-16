@@ -13,18 +13,16 @@
 - Model confidence (simple): Unknown — Live hit-rate missing.
 
 ### Rationale  
-Next play leverages strongest digit probabilities and fresh drought/momentum signals from the combined model. The last draw included two Top-4 digits (0 and 2, though 2 is outside Top-4) plus fireball 2; moving forward, sticking to Top-4 coverage maximizes baseline likelihood while adding slight chaos for volatility.
+Top model probabilities favor digits 0, 3, 5, 6 strongly, reflecting their higher expected frequency. Digit 0 leads notably with 25%+ probability, supporting its inclusion. Drought signals suggest some digits have been absent recently but do not outweigh base odds for top picks. No live hit-rate data lowers certainty; lean cautiously.
 
 ### Lean play  
-Top 4 digits only: [0, 3, 5, 6]
+[0, 3, 5, 6]
 
 ### Chaos add-on  
-Digit 1: Currently in a short drought (3 draws) and sits just below Top-4 odds—potential rebound.  
-Digit 8: Longer drought (6 draws) and low recent rate, but sometimes undervalued momentum emerges after drought.
+1, 8 — Digit 1 shows a moderate drought (3 draws) suggesting potential catch-up despite lower probability. Digit 8 has a longer drought (6 draws), marking it as a classic long-shot candidate for volatility and surprise hits.
 
 ### Fade list  
-Digit 4: Low probability (0.035) and lowest recent hit rates; no sign of momentum.  
-Digit 9: Low probability and declining recent rates; weak combined signal for next draw.
+4, 9 — Both digits show the lowest combined probability and rate signals. Digit 4 under 4% probability and low recent rank, digit 9 similarly low probability and middling momentum suggest lower expected returns. Avoid these for now.
 
 ---
 
