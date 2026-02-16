@@ -2,8 +2,10 @@ name: Ingest IL Pick 3 (Daily)
 
 on:
   schedule:
-    # Daily at 1:20 AM America/Chicago (07:20 UTC)
-    - cron: "20 7 * * *"
+    # 1:00 PM CST daily  -> 19:00 UTC
+    - cron: "0 19 * * *"
+    # 9:45 PM CST daily -> 03:45 UTC (next day)
+    - cron: "45 3 * * *"
   workflow_dispatch:
 
 permissions:
