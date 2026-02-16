@@ -1,33 +1,32 @@
 # Illinois Pick 3 Play Card (NEXT DRAW)
 
-- Last draw: **6375** (2026-02-14 EVENING)
-- Next expected: **2026-02-15 MIDDAY**
+- Last draw: **2009** (2026-02-15 MIDDAY)
+- Next expected: **2026-02-15 EVENING**
 - Model confidence (simple): **Unknown** — Live hit-rate missing.
 
 ## Official digits (deterministic)
 - Top 4: **[0, 3, 5, 6]**
 
 
-- Last draw: 6375 (2026-02-14 EVENING)  
-- Next expected: 2026-02-15 MIDDAY  
-- Model confidence (simple): Unknown — Live hit-rate missing.
+- Last draw: 2009 (2026-02-15 MIDDAY)  
+- Next expected: 2026-02-15 EVENING  
+- Model confidence (simple): Unknown — Live hit-rate missing.  
 
 ### Rationale  
-Focus on the Top 4 digits with the highest modeled probability and lowest drought (0–2 draws dry). They consistently show stronger signals across short- and medium-term recency buckets, indicating more reliable coverage.
+Top 4 digits show relatively strong probabilities and recent minor droughts, indicating consistent presence. The 0 digit leads the pack and just appeared in the last draw’s 4-digit combo, supporting ongoing coverage.  
 
 ### Lean play  
-Digits: [0, 3, 5, 6]  
-These represent the best combined probability and freshness metrics, forming a solid base set for the 4-digit pick.
+Digits: [0, 3, 5, 6] — These hold the highest combined model probabilities and stable recent appearances.  
 
 ### Chaos add-on  
-Digits: [4, 9]  
-- 4 is currently drought-heavy (3 draws) but may bounce back soon given its low current probability—potential undervalued momentum.  
-- 9 has the longest drought (5 draws) and low frequency; a high chaos pick for potential surprise low-frequency hits.
+Digits: 1 and 4  
+- 1 has a short drought (2 draws) with moderate r10 and r25 values, suggesting potential rebound interest.  
+- 4 has a longer drought (4 draws) and low probability but can be an undervalued momentum play if overdue for a hit.  
 
 ### Fade list  
-Digits: [2, 8]  
-- 2 exhibits very low overall probability and moderate drought, with weak recent hit rates.  
-- 8 shows a substantial drought (4 draws) and low bucket probabilities, making it a weaker candidate for coverage this draw.
+Digits: 8 and 9  
+- 8 shows a long drought (5 draws) with low probability and weak recent ratios.  
+- 9, although appearing in the last draw, displays low probability and historically weaker r50 performance, advising caution.
 
 ---
 
