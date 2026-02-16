@@ -1,32 +1,30 @@
 # Illinois Pick 3 Play Card (NEXT DRAW)
 
-- Last draw: **2009** (2026-02-15 MIDDAY)
-- Next expected: **2026-02-15 EVENING**
+- Last draw: **4202** (2026-02-15 EVENING)
+- Next expected: **2026-02-16 MIDDAY**
 - Model confidence (simple): **Unknown** — Live hit-rate missing.
 
 ## Official digits (deterministic)
 - Top 4: **[0, 3, 5, 6]**
 
 
-- Last draw: 2009 (2026-02-15 MIDDAY)  
-- Next expected: 2026-02-15 EVENING  
-- Model confidence (simple): Unknown — Live hit-rate missing.  
+- Last draw: 4202 (2026-02-15 EVENING)  
+- Next expected: 2026-02-16 MIDDAY  
+- Model confidence (simple): Unknown — Live hit-rate missing.
 
 ### Rationale  
-Top 4 digits show relatively strong probabilities and recent minor droughts, indicating consistent presence. The 0 digit leads the pack and just appeared in the last draw’s 4-digit combo, supporting ongoing coverage.  
+Next play leverages strongest digit probabilities and fresh drought/momentum signals from the combined model. The last draw included two Top-4 digits (0 and 2, though 2 is outside Top-4) plus fireball 2; moving forward, sticking to Top-4 coverage maximizes baseline likelihood while adding slight chaos for volatility.
 
 ### Lean play  
-Digits: [0, 3, 5, 6] — These hold the highest combined model probabilities and stable recent appearances.  
+Top 4 digits only: [0, 3, 5, 6]
 
 ### Chaos add-on  
-Digits: 1 and 4  
-- 1 has a short drought (2 draws) with moderate r10 and r25 values, suggesting potential rebound interest.  
-- 4 has a longer drought (4 draws) and low probability but can be an undervalued momentum play if overdue for a hit.  
+Digit 1: Currently in a short drought (3 draws) and sits just below Top-4 odds—potential rebound.  
+Digit 8: Longer drought (6 draws) and low recent rate, but sometimes undervalued momentum emerges after drought.
 
 ### Fade list  
-Digits: 8 and 9  
-- 8 shows a long drought (5 draws) with low probability and weak recent ratios.  
-- 9, although appearing in the last draw, displays low probability and historically weaker r50 performance, advising caution.
+Digit 4: Low probability (0.035) and lowest recent hit rates; no sign of momentum.  
+Digit 9: Low probability and declining recent rates; weak combined signal for next draw.
 
 ---
 
