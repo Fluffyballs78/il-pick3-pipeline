@@ -12,19 +12,19 @@
 - Next expected: 2026-02-16 EVENING
 - Model confidence (simple): Unknown — Live hit-rate missing.
 
-### Rationale
-Top digits show strong combined probability and moderate recent momentum; drought info flags potential rebounds. Uncertainty remains without live hit-rate data.
+### Rationale  
+Top digits show strong probabilities and low drought for immediate potential. Digits 0, 1, 3, 5 dominate the combined model odds, suggesting coverage there first. Drought presence and momentum also guide secondary choices.
 
-### Lean play
+### Lean play  
 [0, 1, 3, 5]
 
-### Chaos add-on
-6 (drought=3, moderate odds, may bounce back)  
-9 (drought=2, low probability but possible undervalued momentum)
+### Chaos add-on  
+6 (drought=3, moderate prob & rising long-term frequency)  
+9 (drought=2, undervalued recent momentum despite low overall prob)
 
-### Fade list
-4 (lowest probability and low recent momentum)  
-7 (low odds and drought with weak rolling performance)
+### Fade list  
+4 (lowest probability, drought=1, poor recent returns)  
+7 (low probability, sustained drought bucket 3-5, weak recent signals)
 
 ---
 
