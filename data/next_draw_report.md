@@ -1,28 +1,30 @@
 # Illinois Pick 3 Play Card (NEXT DRAW)
 
-- Last draw: **4202** (2026-02-15 EVENING)
-- Next expected: **2026-02-16 MIDDAY**
+- Last draw: **3218** (2026-02-16 MIDDAY)
+- Next expected: **2026-02-16 EVENING**
 - Model confidence (simple): **Unknown** — Live hit-rate missing.
 
 ## Official digits (deterministic)
-- Top 4: **[0, 3, 5, 6]**
+- Top 4: **[0, 1, 3, 5]**
 
 
-- Last draw: 4202 (2026-02-15 EVENING)  
-- Next expected: 2026-02-16 MIDDAY  
+- Last draw: 3218 (2026-02-16 MIDDAY)
+- Next expected: 2026-02-16 EVENING
 - Model confidence (simple): Unknown — Live hit-rate missing.
 
-### Rationale  
-Top model probabilities favor digits 0, 3, 5, 6 strongly, reflecting their higher expected frequency. Digit 0 leads notably with 25%+ probability, supporting its inclusion. Drought signals suggest some digits have been absent recently but do not outweigh base odds for top picks. No live hit-rate data lowers certainty; lean cautiously.
+### Rationale
+Top digits show strong combined probability and moderate recent momentum; drought info flags potential rebounds. Uncertainty remains without live hit-rate data.
 
-### Lean play  
-[0, 3, 5, 6]
+### Lean play
+[0, 1, 3, 5]
 
-### Chaos add-on  
-1, 8 — Digit 1 shows a moderate drought (3 draws) suggesting potential catch-up despite lower probability. Digit 8 has a longer drought (6 draws), marking it as a classic long-shot candidate for volatility and surprise hits.
+### Chaos add-on
+6 (drought=3, moderate odds, may bounce back)  
+9 (drought=2, low probability but possible undervalued momentum)
 
-### Fade list  
-4, 9 — Both digits show the lowest combined probability and rate signals. Digit 4 under 4% probability and low recent rank, digit 9 similarly low probability and middling momentum suggest lower expected returns. Avoid these for now.
+### Fade list
+4 (lowest probability and low recent momentum)  
+7 (low odds and drought with weak rolling performance)
 
 ---
 
