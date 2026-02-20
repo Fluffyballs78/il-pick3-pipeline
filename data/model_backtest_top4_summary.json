@@ -1,48 +1,49 @@
 {
-  "total_predictions": 11556,
-  "top4_hit_rate_any": 0.8854274835583247,
-  "top4_hit_rate_2plus": 0.45145379023883697,
+  "total_predictions": 11557,
+  "top4_hit_rate_any": 0.8854373972484209,
+  "top4_hit_rate_2plus": 0.4514147270052782,
   "distribution_next_draw_hits_in_top4": {
     "0": 1324,
-    "1": 5015,
-    "2": 4295,
-    "3": 890,
+    "1": 5016,
+    "2": 4296,
+    "3": 889,
     "4": 32
   },
   "regime_analysis": {
     "counts": {
       "0": 2267,
-      "1": 5553,
+      "1": 5554,
       "2": 3191,
       "3": 529,
       "4": 16
     },
     "two_plus_hit_rate_by_regime": {
       "0": 0.43670048522276134,
-      "1": 0.45398883486403746,
+      "1": 0.4539070939863162,
       "2": 0.45785020369790036,
       "3": 0.44234404536862004,
       "4": 0.6875
     }
   },
-  "hit_count_mean": 1.419435790931118,
+  "hit_count_mean": 1.4193129704940728,
   "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
   "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier, with regime-aware structural weighting (Variant B).",
   "structural_conditioning": {
     "enabled": true,
     "regime_definition": "prev_repeats = |set(t-1) \u2229 set(t)| using 4-digit digit-sets",
-    "overall_repeat_given_present": 0.34113334505008913,
+    "overall_repeat_given_present": 0.341149298320488,
     "per_regime_multiplier": {
-      "0": 0.9016303388290317,
-      "1": 0.9886840905798422,
-      "2": 1.061977597112789,
-      "3": 1.0944104327611848,
-      "4": 1.4198993063222198
+      "0": 0.9015881756099777,
+      "1": 0.9887385097652701,
+      "2": 1.0619279355251858,
+      "3": 1.0943592545068335,
+      "4": 1.4198329071307676
     },
-    "current_prev_repeat_regime": 1,
+    "current_prev_repeat_regime": 2,
     "current_prev_transition_overlap_digits": [
+      0,
       4
     ],
-    "current_prev_transition_overlap_count": 1
+    "current_prev_transition_overlap_count": 2
   }
 }
