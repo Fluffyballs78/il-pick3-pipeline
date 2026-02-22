@@ -5,17 +5,21 @@ from datetime import datetime
 
 OUT_DIR = os.getenv("OUT_DIR", "data")
 LIVE_LOG_PATH = os.getenv("LIVE_LOG_PATH", os.path.join(OUT_DIR, "live_performance_log.csv"))
+ODDS_PATH = os.getenv("ODDS_PATH", os.path.join(OUT_DIR, "odds_board_latest.json"))
 OUT_JSON = os.getenv("LIVE_SUMMARY_PATH", os.path.join(OUT_DIR, "live_summary.json"))
 
 ROLLING_WINDOWS = [20, 50, 100, 200]
 
+
 def safe_rate(num, den):
     return (num / den) if den else None
+
 
 def read_log(path):
     with open(path, "r", encoding="utf-8") as f:
         r = csv.DictReader(f)
         rows = list(r)
+
     for row in rows:
         row["hits_in_top4"] = int(row["hits_in_top4"])
         row["any_hit"] = int(row["any_hit"])
@@ -25,11 +29,14 @@ def read_log(path):
             row["struct_weight"] = float(row["struct_weight"])
         except:
             row["struct_weight"] = None
+
     return rows
+
 
 def summarize(rows):
     n = len(rows)
     by_regime = {r: {"n": 0, "any_hit": 0, "hit_2plus": 0, "hits_sum": 0} for r in range(5)}
+
     any_hit = sum(r["any_hit"] for r in rows)
     hit_2plus = sum(r["hit_2plus"] for r in rows)
     hits_sum = sum(r["hits_in_top4"] for r in rows)
@@ -58,8 +65,53 @@ def summarize(rows):
         "by_regime": by_regime_out,
     }
 
+
+def load_current_top4():
+    if not os.path.exists(ODDS_PATH):
+        return None
+
+    with open(ODDS_PATH, "r", encoding="utf-8") as f:
+        j = json.load(f)
+
+    try:
+        return str(j["next_draw_odds"]["top4"])
+    except Exception:
+        return None
+
+
+def compute_stability(rows):
+    if not rows:
+        return None
+
+    latest_pred_top4 = rows[-1]["top4"]
+
+    # repeat streak (how many consecutive identical predictions)
+    streak = 0
+    for r in reversed(rows):
+        if r["top4"] == latest_pred_top4:
+            streak += 1
+        else:
+            break
+
+    current_top4 = load_current_top4()
+    overlap_prev = None
+
+    if current_top4 and latest_pred_top4:
+        current_set = set(list(current_top4.strip()))
+        prev_set = set(list(latest_pred_top4.strip()))
+        overlap_prev = len(current_set.intersection(prev_set))
+
+    return {
+        "current_top4": current_top4,
+        "prev_draw_pred_top4": latest_pred_top4,
+        "repeat_streak": streak,
+        "overlap_prev": overlap_prev,
+    }
+
+
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
+
     if not os.path.exists(LIVE_LOG_PATH):
         raise FileNotFoundError(f"Missing {LIVE_LOG_PATH}. Run live_performance_log.py first.")
 
@@ -76,6 +128,8 @@ def main():
             rolling[str(w)] = summarize(rows[-w:])
         else:
             rolling[str(w)] = None
+
+    stability = compute_stability(rows)
 
     out = {
         "generated_at": datetime.utcnow().isoformat() + "Z",
@@ -95,13 +149,15 @@ def main():
         },
         "overall": overall,
         "rolling": rolling,
-        "notes": "Rates computed from live_performance_log.csv (one row per draw).",
+        "stability": stability,
+        "notes": "Rates computed from live_performance_log.csv (one row per draw). Stability compares current odds top4 vs previous prediction.",
     }
 
     with open(OUT_JSON, "w", encoding="utf-8") as f:
         json.dump(out, f, indent=2)
 
     print(f"[ok] wrote {OUT_JSON}")
+
 
 if __name__ == "__main__":
     main()
