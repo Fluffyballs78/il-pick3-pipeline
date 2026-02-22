@@ -1,104 +1,162 @@
+!/usr/bin/env python3
+"""
+build_prev_recap.py
+
+Purpose
+-------
+Builds data/prev_draw_recap.json from the most recent completed draw in
+data/live_performance_log.csv.
+
+This file is designed to be *drop-in* for your existing pipeline:
+- It preserves your existing top-level keys (previous_draw_prediction.*)
+  while adding a new, render-ready object: prev_draw_card
+- It does NOT require web access
+- It relies on live_performance_log.csv being produced earlier in the run
+
+Inputs
+------
+- data/live_performance_log.csv
+
+Outputs
+-------
+- data/prev_draw_recap.json
+
+Notes
+-----
+- Treats "Pick3 + Fireball" as a 4-digit-like string for intersection and recap.
+- If your live_performance_log schema differs, update the column names in
+  `COLUMN_MAP` below.
+"""
+
+from __future__ import annotations
+
+import csv
 import json
-import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from datetime import datetime, timezone
 
-LIVE_LOG_PATH = os.getenv("LIVE_LOG_PATH", "data/live_performance_log.csv")
-ODDS_PATH = os.getenv("ODDS_PATH", "data/odds_board_latest.json")
-OUT_PATH = os.getenv("PREV_RECAP_PATH", "data/prev_draw_recap.json")
+DATA_DIR = Path("data")
+LOG_PATH = DATA_DIR / "live_performance_log.csv"
+OUT_PATH = DATA_DIR / "prev_draw_recap.json"
 
+# Adjust these if your CSV column names differ.
+COLUMN_MAP = {
+    "draw_date": "draw_date",
+    "draw_time": "draw_time",
+    "actual_pick3": "actual_pick3",
+    "actual_fireball": "actual_fireball",
+    "top4": "top4",                 # model top4 used for that draw
+    "hits_in_top4": "hits_in_top4", # integer 0-4 (or string parseable to int)
+    # Optional columns — we include if present:
+    "regime": "regime",
+    "struct_weight": "struct_weight",
+}
 
-def _read_last_nonempty_lines(path: Path, max_lines: int = 2000) -> list[str]:
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+def _read_last_row_csv(path: Path) -> dict:
     if not path.exists():
-        return []
-    data = path.read_text(encoding="utf-8", errors="replace").splitlines()
-    tail = data[-max_lines:] if len(data) > max_lines else data
-    return [ln for ln in tail if ln.strip()]
+        raise FileNotFoundError(f"Missing {path}. Ensure live_performance_log.py ran first.")
 
+    with path.open("r", newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        rows = [r for r in reader if any((v or "").strip() for v in r.values())]
+    if not rows:
+        raise ValueError(f"{path} has no data rows.")
+    return rows[-1]
 
-def _parse_csv_line(line: str) -> list[str]:
-    out, cur, in_q = [], "", False
-    i = 0
-    while i < len(line):
-        ch = line[i]
-        if in_q:
-            if ch == '"':
-                if i + 1 < len(line) and line[i + 1] == '"':
-                    cur += '"'
-                    i += 1
-                else:
-                    in_q = False
-            else:
-                cur += ch
-        else:
-            if ch == '"':
-                in_q = True
-            elif ch == ",":
-                out.append(cur)
-                cur = ""
-            else:
-                cur += ch
-        i += 1
-    out.append(cur)
-    return out
+def _digits_from_actual(pick3: str, fireball: str) -> list[str]:
+    pick3 = (pick3 or "").strip()
+    fireball = (fireball or "").strip()
+    # Pad pick3 if needed
+    if pick3.isdigit() and len(pick3) < 3:
+        pick3 = pick3.zfill(3)
+    digits = list(pick3) + ([fireball] if fireball != "" else [])
+    # Filter to single digits only
+    return [d for d in digits if d.isdigit() and len(d) == 1]
 
+def _digits_from_top4(top4: str) -> list[str]:
+    top4 = (top4 or "").strip()
+    # "0135" -> ["0","1","3","5"]
+    if top4.isdigit() and len(top4) == 4:
+        return list(top4)
+    # If stored like "0,1,3,5" or "0 1 3 5"
+    cleaned = top4.replace(",", " ").replace("|", " ")
+    parts = [p.strip() for p in cleaned.split() if p.strip()]
+    return [p for p in parts if p.isdigit() and len(p) == 1][:4]
 
-def _load_odds(path: Path) -> Dict[str, Any]:
-    if not path.exists():
-        return {}
-    return json.loads(path.read_text(encoding="utf-8"))
+def main() -> None:
+    last = _read_last_row_csv(LOG_PATH)
 
+    def get(col_key: str, default: str = "") -> str:
+        col = COLUMN_MAP[col_key]
+        return (last.get(col) or default).strip()
 
-def _find_latest_prediction_with_outcome(lines: list[str]) -> Optional[Dict[str, str]]:
-    if not lines or len(lines) < 2:
-        return None
+    draw_date = get("draw_date")
+    draw_time = get("draw_time").upper()
+    actual_pick3 = get("actual_pick3")
+    actual_fireball = get("actual_fireball")
+    model_top4 = get("top4")
 
-    header = _parse_csv_line(lines[0])
-    idx = {name: i for i, name in enumerate(header)}
+    # Hits
+    hits_raw = get("hits_in_top4", "0")
+    try:
+        hit_count = int(float(hits_raw))
+    except Exception:
+        hit_count = 0
 
-    def get(cols: list[str], col: str) -> str:
-        j = idx.get(col, -1)
-        return cols[j] if 0 <= j < len(cols) else ""
+    actual_digits = _digits_from_actual(actual_pick3, actual_fireball)
+    model_digits = _digits_from_top4(model_top4)
 
-    for ln in reversed(lines[1:]):
-        cols = _parse_csv_line(ln)
-        hit_count = get(cols, "outcome_hit_count").strip()
-        any_hit = get(cols, "outcome_any_hit").strip()
-        if hit_count != "" or any_hit != "":
-            return {
-                "next_draw_date": get(cols, "next_draw_date").strip(),
-                "next_draw_time": get(cols, "next_draw_time").strip(),
-                "top4": get(cols, "top4").strip(),
-                "outcome_any_hit": any_hit,
-                "outcome_hit_count": hit_count,
-                "outcome_digits_hit": get(cols, "outcome_digits_hit").strip(),
-                "logged_at_utc": get(cols, "logged_at_utc").strip(),
-                "model": get(cols, "model").strip(),
-            }
-    return None
+    actual_set = set(actual_digits)
+    model_set = set(model_digits)
 
+    hit_digits = sorted(actual_set.intersection(model_set))
+    miss_digits = sorted(model_set.difference(actual_set))
 
-def main():
-    live_path = Path(LIVE_LOG_PATH)
-    odds_path = Path(ODDS_PATH)
-    out_path = Path(OUT_PATH)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
+    actual_4 = "".join(actual_digits) if actual_digits else ""
+    model_4 = "".join(model_digits) if model_digits else ""
 
-    odds = _load_odds(odds_path)
-    last_draw = odds.get("last_observed_draw", {}) if isinstance(odds, dict) else {}
+    # Optional metrics
+    regime = last.get(COLUMN_MAP["regime"]) if COLUMN_MAP.get("regime") in (last.keys()) else None
+    struct_weight = last.get(COLUMN_MAP["struct_weight"]) if COLUMN_MAP.get("struct_weight") in (last.keys()) else None
 
-    tail = _read_last_nonempty_lines(live_path)
-    pred = _find_latest_prediction_with_outcome(tail)
+    prev_draw_card = {
+        "draw_date": draw_date,
+        "draw_time": draw_time,
+        "actual_4": actual_4,
+        "actual_pick3": actual_pick3,
+        "actual_fireball": actual_fireball,
+        "model_top4": model_4,
+        "hit_count": hit_count,
+        "hit_digits": hit_digits,
+        "miss_digits": miss_digits,
+    }
+    if regime is not None and str(regime).strip() != "":
+        prev_draw_card["regime"] = regime
+    if struct_weight is not None and str(struct_weight).strip() != "":
+        # keep as string to avoid float rounding changes
+        prev_draw_card["struct_weight"] = struct_weight
 
-    recap: Dict[str, Any] = {
-        "generated_at_utc": __import__("datetime").datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "last_observed_draw": last_draw,
-        "previous_draw_prediction": pred or {},
+    # Preserve your existing structure and add new fields
+    out = {
+        "fetched_at_utc": _utc_now_iso(),
+        "previous_draw_prediction": {
+            "top4": model_4,
+            "outcome_hit_count": hit_count,
+        },
+        # New: render-ready recap object
+        "prev_draw_card": prev_draw_card,
+        # Helpful extras (non-breaking)
+        "debug": {
+            "source": "live_performance_log.csv:last_row",
+        },
     }
 
-    out_path.write_text(json.dumps(recap, indent=2), encoding="utf-8")
-    print(f"[prev_recap] wrote {out_path}")
-
+    OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    OUT_PATH.write_text(json.dumps(out, indent=2), encoding="utf-8")
+    print(f"Wrote {OUT_PATH} (draw={draw_date} {draw_time}, hits={hit_count})")
 
 if __name__ == "__main__":
     main()
