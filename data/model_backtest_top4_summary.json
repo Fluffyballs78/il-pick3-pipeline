@@ -1,9 +1,9 @@
 {
-  "total_predictions": 11562,
-  "top4_hit_rate_any": 0.8854004497491783,
-  "top4_hit_rate_2plus": 0.45147898287493515,
+  "total_predictions": 11563,
+  "top4_hit_rate_any": 0.8853238778863617,
+  "top4_hit_rate_2plus": 0.45143993773242236,
   "distribution_next_draw_hits_in_top4": {
-    "0": 1325,
+    "0": 1326,
     "1": 5017,
     "2": 4298,
     "3": 890,
@@ -12,36 +12,36 @@
   "regime_analysis": {
     "counts": {
       "0": 2268,
-      "1": 5556,
+      "1": 5557,
       "2": 3193,
       "3": 529,
       "4": 16
     },
     "two_plus_hit_rate_by_regime": {
       "0": 0.43694885361552027,
-      "1": 0.4541036717062635,
+      "1": 0.45402195429188413,
       "2": 0.4575634199812089,
       "3": 0.44234404536862004,
       "4": 0.6875
     }
   },
-  "hit_count_mean": 1.419391108804705,
+  "hit_count_mean": 1.4192683559629853,
   "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
   "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier, with regime-aware structural weighting (Variant B).",
   "structural_conditioning": {
     "enabled": true,
     "regime_definition": "prev_repeats = |set(t-1) \u2229 set(t)| using 4-digit digit-sets",
-    "overall_repeat_given_present": 0.341129234629862,
+    "overall_repeat_given_present": 0.34112008832237667,
     "per_regime_multiplier": {
-      "0": 0.9015485933134786,
-      "1": 0.9889475721690316,
-      "2": 1.0615989063235534,
-      "3": 1.0944236198068054,
-      "4": 1.4199164153302928
+      "0": 0.9015727661515192,
+      "1": 0.9889200771462393,
+      "2": 1.0616273705223964,
+      "3": 1.0944529641206955,
+      "4": 1.4199544869437293
     },
     "current_prev_repeat_regime": 1,
     "current_prev_transition_overlap_digits": [
-      3
+      7
     ],
     "current_prev_transition_overlap_count": 1
   }
