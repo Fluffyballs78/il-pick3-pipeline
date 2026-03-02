@@ -1,0 +1,78 @@
+name: Log My Pick 3 Play (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      draw_date:
+        description: "Draw date (YYYY-MM-DD)"
+        required: true
+      draw_time:
+        description: "Draw time (MIDDAY or EVENING)"
+        required: true
+        default: "EVENING"
+      play4:
+        description: "Your 4 digits (Pick3+Fireball treated as 4 digits), e.g. 0456"
+        required: true
+      notes:
+        description: "Optional notes"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  log_play:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Log play into DB + CSV
+        env:
+          OUT_DIR: "data"
+          DB_PATH: "data/pick3.sqlite"
+          USER_PLAYS_CSV: "data/user_plays.csv"
+        run: |
+          python log_user_play.py \
+            --draw-date "${{ inputs.draw_date }}" \
+            --draw-time "${{ inputs.draw_time }}" \
+            --play4 "${{ inputs.play4 }}" \
+            --notes "${{ inputs.notes }}"
+
+      - name: Rebuild user play recap (for last observed draw)
+        env:
+          OUT_DIR: "data"
+          DB_PATH: "data/pick3.sqlite"
+          ODDS_PATH: "data/odds_board_latest.json"
+          USER_PLAY_RECAP_PATH: "data/user_play_recap.json"
+        run: |
+          python build_user_play_recap.py
+
+      - name: Commit & push if changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name pick3-bot
+          git config user.email pick3-bot@users.noreply.github.com
+
+          git add \
+            data/pick3.sqlite \
+            data/user_plays.csv \
+            data/user_play_recap.json
+
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git commit -m "Log user play (${{ inputs.draw_date }} ${{ inputs.draw_time }})"
+          git pull --rebase origin main
+          git push origin main
