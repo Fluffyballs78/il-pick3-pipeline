@@ -1,46 +1,49 @@
 {
-  "total_predictions": 11586,
-  "top4_hit_rate_any": 0.8848610391852235,
-  "top4_hit_rate_2plus": 0.4509753150353875,
+  "total_predictions": 11587,
+  "top4_hit_rate_any": 0.8848709760938983,
+  "top4_hit_rate_2plus": 0.45102269785103993,
   "distribution_next_draw_hits_in_top4": {
     "0": 1334,
     "1": 5027,
     "2": 4302,
-    "3": 891,
+    "3": 892,
     "4": 32
   },
   "regime_analysis": {
     "counts": {
-      "0": 2272,
+      "0": 2273,
       "1": 5570,
       "2": 3199,
       "3": 529,
       "4": 16
     },
     "two_plus_hit_rate_by_regime": {
-      "0": 0.4357394366197183,
-      "1": 0.45385996409335727,
+      "0": 0.4359876814782226,
+      "1": 0.45403949730700177,
       "2": 0.4570178180681463,
-      "3": 0.44234404536862004,
+      "3": 0.44045368620037806,
       "4": 0.6875
     }
   },
-  "hit_count_mean": 1.4182634213706198,
+  "hit_count_mean": 1.4183999309571071,
   "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
   "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier, with regime-aware structural weighting (Variant B).",
   "structural_conditioning": {
     "enabled": true,
     "regime_definition": "prev_repeats = |set(t-1) \u2229 set(t)| using 4-digit digit-sets",
-    "overall_repeat_given_present": 0.3410975029428707,
+    "overall_repeat_given_present": 0.34111342065062233,
     "per_regime_multiplier": {
-      "0": 0.9014786731465049,
-      "1": 0.9891138350425468,
-      "2": 1.06138140117958,
-      "3": 1.0945254320670534,
-      "4": 1.420048507599677
+      "0": 0.9017456286170029,
+      "1": 0.9890676790603833,
+      "2": 1.0613318729055978,
+      "3": 1.0944743571608797,
+      "4": 1.419982242493209
     },
-    "current_prev_repeat_regime": 0,
-    "current_prev_transition_overlap_digits": [],
-    "current_prev_transition_overlap_count": 0
+    "current_prev_repeat_regime": 2,
+    "current_prev_transition_overlap_digits": [
+      3,
+      5
+    ],
+    "current_prev_transition_overlap_count": 2
   }
 }
