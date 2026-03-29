@@ -1,18 +1,18 @@
 {
-  "overall_repeat_given_present": 0.34112569233072204,
+  "overall_repeat_given_present": 0.3411415456767949,
   "per_regime_repeat_given_present": {
     "0": 0.3084366907455363,
     "1": 0.33703859060402686,
-    "2": 0.36209579802870484,
+    "2": 0.3621434745030251,
     "3": 0.3734703866862457,
     "4": 0.484375
   },
   "per_regime_multiplier": {
-    "0": 0.9041731469657417,
-    "1": 0.9880187807058146,
-    "2": 1.0614732521455823,
-    "3": 1.0948175264505302,
-    "4": 1.4199311599502669
+    "0": 0.904131128718506,
+    "1": 0.9879728660294713,
+    "2": 1.0615636796291235,
+    "3": 1.0947666486804275,
+    "4": 1.4198651736745886
   },
   "regime_definition": "prev_repeats = |set(t-1) \u2229 set(t)| using 4-digit digit-sets",
   "measurement_definition": "P(digit repeats into next draw | digit present in current draw, conditioned on prev_repeats regime)",
@@ -20,18 +20,18 @@
     "total_present_by_regime": {
       "0": 7337,
       "1": 19072,
-      "2": 11566,
+      "2": 11570,
       "3": 2043,
       "4": 64
     },
     "repeat_hits_by_regime": {
       "0": 2263,
       "1": 6428,
-      "2": 4188,
+      "2": 4190,
       "3": 763,
       "4": 31
     },
-    "total_present_all": 40082,
-    "repeat_hits_all": 13673
+    "total_present_all": 40086,
+    "repeat_hits_all": 13675
   }
 }
