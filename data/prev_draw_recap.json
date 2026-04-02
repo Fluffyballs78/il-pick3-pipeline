@@ -1,32 +1,33 @@
 {
-  "generated_at_utc": "2026-04-02T05:47:49Z",
+  "generated_at_utc": "2026-04-02T18:08:20Z",
   "last_observed_draw": {
-    "draw_date": "2026-04-01",
-    "draw_time": "EVENING",
-    "pick4_like": "7058",
-    "pick3": "705",
-    "fireball": 8
+    "draw_date": "2026-04-02",
+    "draw_time": "MIDDAY",
+    "pick4_like": "5243",
+    "pick3": "524",
+    "fireball": 3
   },
   "previous_draw_prediction": {
-    "draw_date": "2026-04-01",
-    "draw_time": "EVENING",
-    "actual_pick3": "705",
-    "actual_fireball": "8",
-    "regime": 3,
+    "draw_date": "2026-04-02",
+    "draw_time": "MIDDAY",
+    "actual_pick3": "524",
+    "actual_fireball": "3",
+    "regime": 1,
     "top4": "0124",
-    "hits_in_top4": 1,
+    "hits_in_top4": 2,
     "any_hit": 1,
-    "hit_2plus": 0,
-    "struct_weight": 0.04
+    "hit_2plus": 1,
+    "struct_weight": 0.05
   },
   "prev_draw_card": {
-    "draw_date": "2026-04-01",
-    "draw_time": "EVENING",
-    "actual_4": "7058",
+    "draw_date": "2026-04-02",
+    "draw_time": "MIDDAY",
+    "actual_4": "5243",
     "model_top4": "0124",
-    "hit_count": 1,
+    "hit_count": 2,
     "hit_digits": [
-      "0"
+      "2",
+      "4"
     ]
   }
 }
