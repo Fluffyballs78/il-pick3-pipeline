@@ -13,7 +13,6 @@ from bs4 import BeautifulSoup
 # =========================
 # SOURCE: Lottery USA latest + year archive
 # =========================
-# Midday and Evening are separate pages on Lottery USA.
 MIDDAY_LATEST_URL = "https://www.lotteryusa.com/illinois/midday-3/"
 EVENING_LATEST_URL = "https://www.lotteryusa.com/illinois/daily-3/"
 MIDDAY_YEAR_URL = "https://www.lotteryusa.com/illinois/midday-3/year"
@@ -45,11 +44,15 @@ MONTH_MAP = {
     "Dec": 12, "December": 12,
 }
 
-DATE_LINE_RE = re.compile(
-    r"^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s+([A-Za-z]{3,9})\s+(\d{1,2}),\s+(20\d{2})$"
+RESULT_RE = re.compile(
+    r"(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s+"
+    r"([A-Za-z]{3,9})\s+(\d{1,2}),\s+(20\d{2})"
+    r".*?\*\s*(\d)"
+    r".*?\*\s*(\d)"
+    r".*?\*\s*(\d)"
+    r".*?FB\s*:\s*(\d)",
+    re.DOTALL,
 )
-DIGIT_LINE_RE = re.compile(r"^[\*\u2022\-\u2013\u2014]?\s*(\d)\s*$")
-FB_LINE_RE = re.compile(r"^[\*\u2022\-\u2013\u2014]?\s*FB\s*:\s*(\d)\s*$", re.IGNORECASE)
 
 
 def utc_now_iso() -> str:
@@ -75,7 +78,7 @@ def init_db(conn: sqlite3.Connection) -> None:
         has_double INTEGER NOT NULL,
         has_triple INTEGER NOT NULL,
         repeated_digit INTEGER,
-        digit_counts TEXT NOT NULL,           -- JSON
+        digit_counts TEXT NOT NULL,
         source_url TEXT NOT NULL,
         ingested_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
@@ -190,27 +193,16 @@ def export_csv(conn: sqlite3.Connection, path: str) -> None:
         w.writerows(rows)
 
 
-def fetch_lines(url: str) -> List[str]:
+def fetch_text(url: str) -> str:
     r = requests.get(url, headers=HEADERS, timeout=45)
     r.raise_for_status()
     soup = BeautifulSoup(r.text, "lxml")
-    text = soup.get_text("\n", strip=True)
-    return [ln.strip() for ln in text.split("\n") if ln.strip()]
+    return soup.get_text("\n", strip=True)
 
 
-def parse_draw_date(line: str) -> Optional[str]:
-    m = DATE_LINE_RE.match(line)
-    if not m:
-        return None
-
-    month_name = m.group(2)
-    month_num = MONTH_MAP.get(month_name)
-    if not month_num:
-        return None
-
-    day = int(m.group(3))
-    year = int(m.group(4))
-    return datetime(year, month_num, day).strftime("%Y-%m-%d")
+def normalize_draw_date(month_name: str, day: str, year: str) -> str:
+    month_num = MONTH_MAP[month_name]
+    return datetime(int(year), month_num, int(day)).strftime("%Y-%m-%d")
 
 
 def build_row(draw_date: str, draw_time: str, d1: int, d2: int, d3: int, fb: Optional[int], source_url: str) -> Dict[str, Any]:
@@ -245,42 +237,19 @@ def build_row(draw_date: str, draw_time: str, d1: int, d2: int, d3: int, fb: Opt
     }
 
 
-def parse_lotteryusa_page(lines: List[str], draw_time: str, source_url: str) -> List[Dict[str, Any]]:
+def parse_lotteryusa_page(text: str, draw_time: str, source_url: str) -> List[Dict[str, Any]]:
     out: List[Dict[str, Any]] = []
-    i = 0
 
-    while i < len(lines):
-        draw_date = parse_draw_date(lines[i])
-        if not draw_date:
-            i += 1
-            continue
-
-        digits: List[int] = []
-        fb: Optional[int] = None
-        j = i + 1
-
-        while j < min(i + 20, len(lines)):
-            m_digit = DIGIT_LINE_RE.match(lines[j])
-            if m_digit and len(digits) < 3:
-                digits.append(int(m_digit.group(1)))
-                j += 1
-                continue
-
-            m_fb = FB_LINE_RE.match(lines[j])
-            if m_fb:
-                fb = int(m_fb.group(1))
-                break
-
-            # Stop if we hit the next date before finding a full row.
-            if parse_draw_date(lines[j]):
-                break
-
-            j += 1
-
-        if len(digits) == 3:
-            out.append(build_row(draw_date, draw_time, digits[0], digits[1], digits[2], fb, source_url))
-
-        i += 1
+    for match in RESULT_RE.finditer(text):
+        month_name = match.group(2)
+        day = match.group(3)
+        year = match.group(4)
+        draw_date = normalize_draw_date(month_name, day, year)
+        d1 = int(match.group(5))
+        d2 = int(match.group(6))
+        d3 = int(match.group(7))
+        fb = int(match.group(8))
+        out.append(build_row(draw_date, draw_time, d1, d2, d3, fb, source_url))
 
     return out
 
@@ -307,10 +276,6 @@ def main() -> None:
 
     print(f"[ingest] START_DATE={START_DATE}")
 
-    # Lottery USA's archive page currently exposes roughly the last year of results.
-    # For normal scheduled runs this is fine because START_DATE comes from the latest date
-    # already in the DB. If the DB is missing and START_DATE is very old, the ingest will
-    # still load available history but not a full backfill to 2010.
     if start_dt < today - timedelta(days=370):
         print("[ingest] WARNING: Lottery USA archive coverage is limited. Older backfills may require an existing DB/CSV seed.")
 
@@ -322,8 +287,8 @@ def main() -> None:
 
     for draw_time, url in iter_source_urls():
         print(f"[ingest] fetching {draw_time}: {url}")
-        lines = fetch_lines(url)
-        parsed = parse_lotteryusa_page(lines, draw_time, url)
+        text = fetch_text(url)
+        parsed = parse_lotteryusa_page(text, draw_time, url)
         print(f"[ingest] parsed {len(parsed)} rows for {draw_time} from {url}")
         all_rows.extend(parsed)
 
