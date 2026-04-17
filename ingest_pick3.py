@@ -48,9 +48,14 @@ DATE_LINE_RE = re.compile(
     r"^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s+"
     r"([A-Za-z]{3,9})\s+(\d{1,2}),\s+(20\d{2})$"
 )
-
 DIGIT_LINE_RE = re.compile(r"^\*\s*(\d)$")
 FB_LINE_RE = re.compile(r"^\*\s*FB\s*:\s*(\d)$", re.IGNORECASE)
+COMPACT_RESULT_RE = re.compile(
+    r"(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s+"
+    r"([A-Za-z]{3,9})\s+(\d{1,2}),\s+(20\d{2})\s+"
+    r"(\d),\s*(\d),\s*(\d),\s*FB:\s*(\d)",
+    re.IGNORECASE,
+)
 
 
 def utc_now_iso() -> str:
@@ -66,7 +71,7 @@ def init_db(conn: sqlite3.Connection) -> None:
     conn.execute("""
     CREATE TABLE IF NOT EXISTS pick3_draws (
         draw_date TEXT NOT NULL,
-        draw_time TEXT NOT NULL,              -- MIDDAY | EVENING
+        draw_time TEXT NOT NULL,
         pick3_d1 INTEGER NOT NULL,
         pick3_d2 INTEGER NOT NULL,
         pick3_d3 INTEGER NOT NULL,
@@ -199,16 +204,16 @@ def fetch_lines(url: str) -> List[str]:
     return [line.strip() for line in text.splitlines() if line.strip()]
 
 
+def normalize_draw_date(month_name: str, day: str, year: str) -> str:
+    month_num = MONTH_MAP[month_name]
+    return datetime(int(year), month_num, int(day)).strftime("%Y-%m-%d")
+
+
 def parse_draw_date(line: str) -> Optional[str]:
     match = DATE_LINE_RE.match(line)
     if not match:
         return None
-
-    month_name = match.group(2)
-    day = match.group(3)
-    year = match.group(4)
-    month_num = MONTH_MAP[month_name]
-    return datetime(int(year), month_num, int(day)).strftime("%Y-%m-%d")
+    return normalize_draw_date(match.group(2), match.group(3), match.group(4))
 
 
 def build_row(draw_date: str, draw_time: str, d1: int, d2: int, d3: int, fb: Optional[int], source_url: str) -> Dict[str, Any]:
@@ -243,6 +248,25 @@ def build_row(draw_date: str, draw_time: str, d1: int, d2: int, d3: int, fb: Opt
     }
 
 
+def parse_compact_results(lines: List[str], draw_time: str, source_url: str) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    for line in lines:
+        for match in COMPACT_RESULT_RE.finditer(line):
+            draw_date = normalize_draw_date(match.group(2), match.group(3), match.group(4))
+            out.append(
+                build_row(
+                    draw_date,
+                    draw_time,
+                    int(match.group(5)),
+                    int(match.group(6)),
+                    int(match.group(7)),
+                    int(match.group(8)),
+                    source_url,
+                )
+            )
+    return out
+
+
 def parse_lotteryusa_page(lines: List[str], draw_time: str, source_url: str) -> List[Dict[str, Any]]:
     out: List[Dict[str, Any]] = []
     current_date: Optional[str] = None
@@ -251,10 +275,8 @@ def parse_lotteryusa_page(lines: List[str], draw_time: str, source_url: str) -> 
 
     def flush_current() -> None:
         nonlocal current_date, digits, fireball
-
         if current_date is not None and len(digits) == 3 and fireball is not None:
             out.append(build_row(current_date, draw_time, digits[0], digits[1], digits[2], fireball, source_url))
-
         current_date = None
         digits = []
         fireball = None
@@ -281,7 +303,11 @@ def parse_lotteryusa_page(lines: List[str], draw_time: str, source_url: str) -> 
             continue
 
     flush_current()
-    return out
+
+    if out:
+        return out
+
+    return parse_compact_results(lines, draw_time, source_url)
 
 
 def iter_source_urls() -> List[Tuple[str, str]]:
