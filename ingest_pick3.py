@@ -44,15 +44,13 @@ MONTH_MAP = {
     "Dec": 12, "December": 12,
 }
 
-RESULT_RE = re.compile(
-    r"(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s+"
-    r"([A-Za-z]{3,9})\s+(\d{1,2}),\s+(20\d{2})"
-    r".*?\*\s*(\d)"
-    r".*?\*\s*(\d)"
-    r".*?\*\s*(\d)"
-    r".*?FB\s*:\s*(\d)",
-    re.DOTALL,
+DATE_LINE_RE = re.compile(
+    r"^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s+"
+    r"([A-Za-z]{3,9})\s+(\d{1,2}),\s+(20\d{2})$"
 )
+
+DIGIT_LINE_RE = re.compile(r"^\*\s*(\d)$")
+FB_LINE_RE = re.compile(r"^\*\s*FB\s*:\s*(\d)$", re.IGNORECASE)
 
 
 def utc_now_iso() -> str:
@@ -193,14 +191,22 @@ def export_csv(conn: sqlite3.Connection, path: str) -> None:
         w.writerows(rows)
 
 
-def fetch_text(url: str) -> str:
+def fetch_lines(url: str) -> List[str]:
     r = requests.get(url, headers=HEADERS, timeout=45)
     r.raise_for_status()
     soup = BeautifulSoup(r.text, "lxml")
-    return soup.get_text("\n", strip=True)
+    text = soup.get_text("\n", strip=True)
+    return [line.strip() for line in text.splitlines() if line.strip()]
 
 
-def normalize_draw_date(month_name: str, day: str, year: str) -> str:
+def parse_draw_date(line: str) -> Optional[str]:
+    match = DATE_LINE_RE.match(line)
+    if not match:
+        return None
+
+    month_name = match.group(2)
+    day = match.group(3)
+    year = match.group(4)
     month_num = MONTH_MAP[month_name]
     return datetime(int(year), month_num, int(day)).strftime("%Y-%m-%d")
 
@@ -237,20 +243,44 @@ def build_row(draw_date: str, draw_time: str, d1: int, d2: int, d3: int, fb: Opt
     }
 
 
-def parse_lotteryusa_page(text: str, draw_time: str, source_url: str) -> List[Dict[str, Any]]:
+def parse_lotteryusa_page(lines: List[str], draw_time: str, source_url: str) -> List[Dict[str, Any]]:
     out: List[Dict[str, Any]] = []
+    current_date: Optional[str] = None
+    digits: List[int] = []
+    fireball: Optional[int] = None
 
-    for match in RESULT_RE.finditer(text):
-        month_name = match.group(2)
-        day = match.group(3)
-        year = match.group(4)
-        draw_date = normalize_draw_date(month_name, day, year)
-        d1 = int(match.group(5))
-        d2 = int(match.group(6))
-        d3 = int(match.group(7))
-        fb = int(match.group(8))
-        out.append(build_row(draw_date, draw_time, d1, d2, d3, fb, source_url))
+    def flush_current() -> None:
+        nonlocal current_date, digits, fireball
 
+        if current_date is not None and len(digits) == 3 and fireball is not None:
+            out.append(build_row(current_date, draw_time, digits[0], digits[1], digits[2], fireball, source_url))
+
+        current_date = None
+        digits = []
+        fireball = None
+
+    for line in lines:
+        draw_date = parse_draw_date(line)
+        if draw_date is not None:
+            flush_current()
+            current_date = draw_date
+            continue
+
+        if current_date is None:
+            continue
+
+        digit_match = DIGIT_LINE_RE.match(line)
+        if digit_match:
+            if len(digits) < 3:
+                digits.append(int(digit_match.group(1)))
+            continue
+
+        fb_match = FB_LINE_RE.match(line)
+        if fb_match:
+            fireball = int(fb_match.group(1))
+            continue
+
+    flush_current()
     return out
 
 
@@ -287,8 +317,8 @@ def main() -> None:
 
     for draw_time, url in iter_source_urls():
         print(f"[ingest] fetching {draw_time}: {url}")
-        text = fetch_text(url)
-        parsed = parse_lotteryusa_page(text, draw_time, url)
+        lines = fetch_lines(url)
+        parsed = parse_lotteryusa_page(lines, draw_time, url)
         print(f"[ingest] parsed {len(parsed)} rows for {draw_time} from {url}")
         all_rows.extend(parsed)
 
