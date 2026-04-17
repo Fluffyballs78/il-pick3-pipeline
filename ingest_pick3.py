@@ -4,17 +4,20 @@ import csv
 import json
 import hashlib
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any, List, Tuple
 
 import requests
 from bs4 import BeautifulSoup
 
 # =========================
-# SOURCE: Lottery.net year archives (true history)
+# SOURCE: Lottery USA latest + year archive
 # =========================
-MIDDAY_YEAR_URL_TMPL = "https://www.lottery.net/illinois/pick-3-midday/numbers/{year}"
-EVENING_YEAR_URL_TMPL = "https://www.lottery.net/illinois/pick-3-evening/numbers/{year}"
+# Midday and Evening are separate pages on Lottery USA.
+MIDDAY_LATEST_URL = "https://www.lotteryusa.com/illinois/midday-3/"
+EVENING_LATEST_URL = "https://www.lotteryusa.com/illinois/daily-3/"
+MIDDAY_YEAR_URL = "https://www.lotteryusa.com/illinois/midday-3/year"
+EVENING_YEAR_URL = "https://www.lotteryusa.com/illinois/daily-3/year"
 
 DB_PATH = os.getenv("DB_PATH", "data/pick3.sqlite")
 CSV_PATH = os.getenv("CSV_PATH", "data/pick3.csv")
@@ -27,29 +30,26 @@ HEADERS = {
     "Connection": "keep-alive",
 }
 
-WEEKDAYS = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
-
-MONTH_MAP_FULL = {
-    "January": 1, "February": 2, "March": 3, "April": 4,
-    "May": 5, "June": 6, "July": 7, "August": 8,
-    "September": 9, "October": 10, "November": 11, "December": 12,
+MONTH_MAP = {
+    "Jan": 1, "January": 1,
+    "Feb": 2, "February": 2,
+    "Mar": 3, "March": 3,
+    "Apr": 4, "April": 4,
+    "May": 5,
+    "Jun": 6, "June": 6,
+    "Jul": 7, "July": 7,
+    "Aug": 8, "August": 8,
+    "Sep": 9, "Sept": 9, "September": 9,
+    "Oct": 10, "October": 10,
+    "Nov": 11, "November": 11,
+    "Dec": 12, "December": 12,
 }
 
-# Two-line date format (older pages):
-#   Wednesday
-#   December 31, 2025
-DATE_LINE_RE = re.compile(r"^([A-Za-z]+)\s+(\d{1,2}),\s+(20\d{2})$")
-
-# One-line combined format (sometimes appears):
-#   Wednesday January 21, 2026   23571
-COMBINED_LINE_RE = re.compile(
-    r"^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+"
-    r"([A-Za-z]+)\s+(\d{1,2}),\s+(20\d{2})\b"
+DATE_LINE_RE = re.compile(
+    r"^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s+([A-Za-z]{3,9})\s+(\d{1,2}),\s+(20\d{2})$"
 )
-
-# ✅ NEW: matches digit lines like:
-# "2", "* 2", "• 2", "- 2"
-BULLET_DIGIT_RE = re.compile(r"^[\*\u2022\-\u2013\u2014]?\s*(\d)\s*$")
+DIGIT_LINE_RE = re.compile(r"^[\*\u2022\-\u2013\u2014]?\s*(\d)\s*$")
+FB_LINE_RE = re.compile(r"^[\*\u2022\-\u2013\u2014]?\s*FB\s*:\s*(\d)\s*$", re.IGNORECASE)
 
 
 def utc_now_iso() -> str:
@@ -198,109 +198,121 @@ def fetch_lines(url: str) -> List[str]:
     return [ln.strip() for ln in text.split("\n") if ln.strip()]
 
 
-def extract_draw_date(lines: List[str], idx: int) -> Tuple[Optional[str], int]:
-    """
-    Supports:
-      A) One-line: 'Wednesday January 21, 2026 23571'
-      B) Two-line: 'Wednesday' then 'January 21, 2026'
-    Returns (YYYY-MM-DD, header_index_used).
-    """
-    # One-line combined
-    m = COMBINED_LINE_RE.match(lines[idx])
-    if m:
-        month = m.group(2)
-        day = int(m.group(3))
-        year = int(m.group(4))
-        month_num = MONTH_MAP_FULL.get(month)
-        if month_num:
-            return datetime(year, month_num, day).strftime("%Y-%m-%d"), idx
-        return None, idx
+def parse_draw_date(line: str) -> Optional[str]:
+    m = DATE_LINE_RE.match(line)
+    if not m:
+        return None
 
-    # Two-line weekday + date next
-    if lines[idx] in WEEKDAYS and idx + 1 < len(lines):
-        m2 = DATE_LINE_RE.match(lines[idx + 1])
-        if m2:
-            month = m2.group(1)
-            day = int(m2.group(2))
-            year = int(m2.group(3))
-            month_num = MONTH_MAP_FULL.get(month)
-            if month_num:
-                return datetime(year, month_num, day).strftime("%Y-%m-%d"), idx + 1
+    month_name = m.group(2)
+    month_num = MONTH_MAP.get(month_name)
+    if not month_num:
+        return None
 
-    return None, idx
+    day = int(m.group(3))
+    year = int(m.group(4))
+    return datetime(year, month_num, day).strftime("%Y-%m-%d")
 
 
-def parse_lotterynet_year_page(lines: List[str], draw_time: str, source_url: str) -> List[Dict[str, Any]]:
+def build_row(draw_date: str, draw_time: str, d1: int, d2: int, d3: int, fb: Optional[int], source_url: str) -> Dict[str, Any]:
+    pick3_str = f"{d1}{d2}{d3}"
+    sorted_str = "".join(sorted(pick3_str))
+
+    counts: Dict[str, int] = {str(x): 0 for x in range(10)}
+    for d in (d1, d2, d3):
+        counts[str(d)] += 1
+
+    has_triple = 1 if 3 in counts.values() else 0
+    has_double = 1 if (2 in counts.values() and has_triple == 0) else 0
+    repeated_digit = None
+    if has_double:
+        repeated_digit = int([k for k, v in counts.items() if v == 2][0])
+
+    return {
+        "draw_date": draw_date,
+        "draw_time": draw_time,
+        "d1": d1,
+        "d2": d2,
+        "d3": d3,
+        "fireball": fb,
+        "pick3_str": pick3_str,
+        "sorted_str": sorted_str,
+        "has_double": has_double,
+        "has_triple": has_triple,
+        "repeated_digit": repeated_digit,
+        "digit_counts": json.dumps(counts),
+        "source_url": source_url,
+        "checksum": compute_checksum(draw_date, draw_time, d1, d2, d3, fb),
+    }
+
+
+def parse_lotteryusa_page(lines: List[str], draw_time: str, source_url: str) -> List[Dict[str, Any]]:
     out: List[Dict[str, Any]] = []
     i = 0
 
-    while i < len(lines) - 6:
-        draw_date, header_idx = extract_draw_date(lines, i)
+    while i < len(lines):
+        draw_date = parse_draw_date(lines[i])
         if not draw_date:
             i += 1
             continue
 
-        # Collect next 4 digits after header: 3 pick digits + fireball
         digits: List[int] = []
-        j = header_idx + 1
-        while j < min(header_idx + 120, len(lines)) and len(digits) < 4:
-            m = BULLET_DIGIT_RE.match(lines[j])
-            if m:
-                digits.append(int(m.group(1)))
+        fb: Optional[int] = None
+        j = i + 1
+
+        while j < min(i + 20, len(lines)):
+            m_digit = DIGIT_LINE_RE.match(lines[j])
+            if m_digit and len(digits) < 3:
+                digits.append(int(m_digit.group(1)))
+                j += 1
+                continue
+
+            m_fb = FB_LINE_RE.match(lines[j])
+            if m_fb:
+                fb = int(m_fb.group(1))
+                break
+
+            # Stop if we hit the next date before finding a full row.
+            if parse_draw_date(lines[j]):
+                break
+
             j += 1
 
-        if len(digits) >= 3:
-            d1, d2, d3 = digits[0], digits[1], digits[2]
-            fb: Optional[int] = digits[3] if len(digits) >= 4 else None
-
-            pick3_str = f"{d1}{d2}{d3}"
-            sorted_str = "".join(sorted(pick3_str))
-
-            counts: Dict[str, int] = {str(x): 0 for x in range(10)}
-            for d in (d1, d2, d3):
-                counts[str(d)] += 1
-
-            has_triple = 1 if 3 in counts.values() else 0
-            has_double = 1 if (2 in counts.values() and has_triple == 0) else 0
-            repeated_digit = None
-            if has_double:
-                repeated_digit = int([k for k, v in counts.items() if v == 2][0])
-
-            out.append({
-                "draw_date": draw_date,
-                "draw_time": draw_time,
-                "d1": d1, "d2": d2, "d3": d3,
-                "fireball": fb,
-                "pick3_str": pick3_str,
-                "sorted_str": sorted_str,
-                "has_double": has_double,
-                "has_triple": has_triple,
-                "repeated_digit": repeated_digit,
-                "digit_counts": json.dumps(counts),
-                "source_url": source_url,
-                "checksum": compute_checksum(draw_date, draw_time, d1, d2, d3, fb),
-            })
+        if len(digits) == 3:
+            out.append(build_row(draw_date, draw_time, digits[0], digits[1], digits[2], fb, source_url))
 
         i += 1
 
     return out
 
 
-def iter_year_urls(start_year: int, end_year: int) -> List[Tuple[int, str, str]]:
-    out: List[Tuple[int, str, str]] = []
-    for y in range(start_year, end_year + 1):
-        out.append((y, "MIDDAY", MIDDAY_YEAR_URL_TMPL.format(year=y)))
-        out.append((y, "EVENING", EVENING_YEAR_URL_TMPL.format(year=y)))
-    return out
+def iter_source_urls() -> List[Tuple[str, str]]:
+    return [
+        ("MIDDAY", MIDDAY_LATEST_URL),
+        ("EVENING", EVENING_LATEST_URL),
+        ("MIDDAY", MIDDAY_YEAR_URL),
+        ("EVENING", EVENING_YEAR_URL),
+    ]
+
+
+def dedupe_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    deduped: Dict[Tuple[str, str], Dict[str, Any]] = {}
+    for row in rows:
+        deduped[(row["draw_date"], row["draw_time"])] = row
+    return list(deduped.values())
 
 
 def main() -> None:
     start_dt = datetime.strptime(START_DATE, "%Y-%m-%d")
-    now = datetime.now()
-    start_year = start_dt.year
-    end_year = now.year
+    today = datetime.now()
 
-    print(f"[ingest] START_DATE={START_DATE} (years {start_year}..{end_year})")
+    print(f"[ingest] START_DATE={START_DATE}")
+
+    # Lottery USA's archive page currently exposes roughly the last year of results.
+    # For normal scheduled runs this is fine because START_DATE comes from the latest date
+    # already in the DB. If the DB is missing and START_DATE is very old, the ingest will
+    # still load available history but not a full backfill to 2010.
+    if start_dt < today - timedelta(days=370):
+        print("[ingest] WARNING: Lottery USA archive coverage is limited. Older backfills may require an existing DB/CSV seed.")
 
     os.makedirs(os.path.dirname(DB_PATH) or "data", exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
@@ -308,15 +320,16 @@ def main() -> None:
 
     all_rows: List[Dict[str, Any]] = []
 
-    for year, draw_time, url in iter_year_urls(start_year, end_year):
-        print(f"[ingest] fetching {draw_time} year={year}: {url}")
+    for draw_time, url in iter_source_urls():
+        print(f"[ingest] fetching {draw_time}: {url}")
         lines = fetch_lines(url)
-        parsed = parse_lotterynet_year_page(lines, draw_time, url)
-        print(f"[ingest] parsed {len(parsed)} rows for {draw_time} {year}")
+        parsed = parse_lotteryusa_page(lines, draw_time, url)
+        print(f"[ingest] parsed {len(parsed)} rows for {draw_time} from {url}")
         all_rows.extend(parsed)
 
-    # Filter by START_DATE (inclusive)
+    all_rows = dedupe_rows(all_rows)
     all_rows = [r for r in all_rows if datetime.strptime(r["draw_date"], "%Y-%m-%d") >= start_dt]
+    all_rows.sort(key=lambda r: (r["draw_date"], 0 if r["draw_time"] == "MIDDAY" else 1))
 
     if not all_rows:
         raise SystemExit("Ingested 0 rows (source blocked or parsing changed).")
