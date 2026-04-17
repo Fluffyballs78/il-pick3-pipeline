@@ -4,19 +4,16 @@ import csv
 import json
 import hashlib
 import sqlite3
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List, Tuple
 
 import requests
 from bs4 import BeautifulSoup
 
 # =========================
-# SOURCE: Lottery USA latest + year archive
+# SOURCE: Official Illinois Lottery Pick 3 results page
 # =========================
-MIDDAY_LATEST_URL = "https://www.lotteryusa.com/illinois/midday-3/"
-EVENING_LATEST_URL = "https://www.lotteryusa.com/illinois/daily-3/"
-MIDDAY_YEAR_URL = "https://www.lotteryusa.com/illinois/midday-3/year"
-EVENING_YEAR_URL = "https://www.lotteryusa.com/illinois/daily-3/year"
+OFFICIAL_RESULTS_URL = "https://www.illinoislottery.com/dbg/results/pick3"
 
 DB_PATH = os.getenv("DB_PATH", "data/pick3.sqlite")
 CSV_PATH = os.getenv("CSV_PATH", "data/pick3.csv")
@@ -44,16 +41,10 @@ MONTH_MAP = {
     "Dec": 12, "December": 12,
 }
 
-DATE_LINE_RE = re.compile(
-    r"^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s+"
-    r"([A-Za-z]{3,9})\s+(\d{1,2}),\s+(20\d{2})$"
-)
-DIGIT_LINE_RE = re.compile(r"^\*\s*(\d)$")
-FB_LINE_RE = re.compile(r"^\*\s*FB\s*:\s*(\d)$", re.IGNORECASE)
-COMPACT_RESULT_RE = re.compile(
-    r"(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s+"
+RESULT_LINE_RE = re.compile(
+    r"^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+"
     r"([A-Za-z]{3,9})\s+(\d{1,2}),\s+(20\d{2})\s+"
-    r"(\d),\s*(\d),\s*(\d),\s*FB:\s*(\d)",
+    r"(evening|midday)\s+(\d)\s+(\d)\s+(\d)\s+(\d)$",
     re.IGNORECASE,
 )
 
@@ -209,13 +200,6 @@ def normalize_draw_date(month_name: str, day: str, year: str) -> str:
     return datetime(int(year), month_num, int(day)).strftime("%Y-%m-%d")
 
 
-def parse_draw_date(line: str) -> Optional[str]:
-    match = DATE_LINE_RE.match(line)
-    if not match:
-        return None
-    return normalize_draw_date(match.group(2), match.group(3), match.group(4))
-
-
 def build_row(draw_date: str, draw_time: str, d1: int, d2: int, d3: int, fb: Optional[int], source_url: str) -> Dict[str, Any]:
     pick3_str = f"{d1}{d2}{d3}"
     sorted_str = "".join(sorted(pick3_str))
@@ -248,75 +232,26 @@ def build_row(draw_date: str, draw_time: str, d1: int, d2: int, d3: int, fb: Opt
     }
 
 
-def parse_compact_results(lines: List[str], draw_time: str, source_url: str) -> List[Dict[str, Any]]:
+def parse_official_page(lines: List[str], source_url: str) -> List[Dict[str, Any]]:
     out: List[Dict[str, Any]] = []
     for line in lines:
-        for match in COMPACT_RESULT_RE.finditer(line):
-            draw_date = normalize_draw_date(match.group(2), match.group(3), match.group(4))
-            out.append(
-                build_row(
-                    draw_date,
-                    draw_time,
-                    int(match.group(5)),
-                    int(match.group(6)),
-                    int(match.group(7)),
-                    int(match.group(8)),
-                    source_url,
-                )
-            )
+        match = RESULT_LINE_RE.match(line)
+        if not match:
+            continue
+
+        draw_date = normalize_draw_date(match.group(2), match.group(3), match.group(4))
+        draw_time = match.group(5).upper()
+        d1 = int(match.group(6))
+        d2 = int(match.group(7))
+        d3 = int(match.group(8))
+        fb = int(match.group(9))
+        out.append(build_row(draw_date, draw_time, d1, d2, d3, fb, source_url))
+
     return out
 
 
-def parse_lotteryusa_page(lines: List[str], draw_time: str, source_url: str) -> List[Dict[str, Any]]:
-    out: List[Dict[str, Any]] = []
-    current_date: Optional[str] = None
-    digits: List[int] = []
-    fireball: Optional[int] = None
-
-    def flush_current() -> None:
-        nonlocal current_date, digits, fireball
-        if current_date is not None and len(digits) == 3 and fireball is not None:
-            out.append(build_row(current_date, draw_time, digits[0], digits[1], digits[2], fireball, source_url))
-        current_date = None
-        digits = []
-        fireball = None
-
-    for line in lines:
-        draw_date = parse_draw_date(line)
-        if draw_date is not None:
-            flush_current()
-            current_date = draw_date
-            continue
-
-        if current_date is None:
-            continue
-
-        digit_match = DIGIT_LINE_RE.match(line)
-        if digit_match:
-            if len(digits) < 3:
-                digits.append(int(digit_match.group(1)))
-            continue
-
-        fb_match = FB_LINE_RE.match(line)
-        if fb_match:
-            fireball = int(fb_match.group(1))
-            continue
-
-    flush_current()
-
-    if out:
-        return out
-
-    return parse_compact_results(lines, draw_time, source_url)
-
-
-def iter_source_urls() -> List[Tuple[str, str]]:
-    return [
-        ("MIDDAY", MIDDAY_LATEST_URL),
-        ("EVENING", EVENING_LATEST_URL),
-        ("MIDDAY", MIDDAY_YEAR_URL),
-        ("EVENING", EVENING_YEAR_URL),
-    ]
+def iter_source_urls() -> List[str]:
+    return [OFFICIAL_RESULTS_URL]
 
 
 def dedupe_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -328,12 +263,8 @@ def dedupe_rows(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 def main() -> None:
     start_dt = datetime.strptime(START_DATE, "%Y-%m-%d")
-    today = datetime.now()
 
     print(f"[ingest] START_DATE={START_DATE}")
-
-    if start_dt < today - timedelta(days=370):
-        print("[ingest] WARNING: Lottery USA archive coverage is limited. Older backfills may require an existing DB/CSV seed.")
 
     os.makedirs(os.path.dirname(DB_PATH) or "data", exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
@@ -341,11 +272,14 @@ def main() -> None:
 
     all_rows: List[Dict[str, Any]] = []
 
-    for draw_time, url in iter_source_urls():
-        print(f"[ingest] fetching {draw_time}: {url}")
+    for url in iter_source_urls():
+        print(f"[ingest] fetching OFFICIAL: {url}")
         lines = fetch_lines(url)
-        parsed = parse_lotteryusa_page(lines, draw_time, url)
-        print(f"[ingest] parsed {len(parsed)} rows for {draw_time} from {url}")
+        parsed = parse_official_page(lines, url)
+        print(f"[ingest] parsed {len(parsed)} rows from {url}")
+        if not parsed:
+            debug_preview = " | ".join(lines[:20])
+            print(f"[ingest] debug first lines: {debug_preview}")
         all_rows.extend(parsed)
 
     all_rows = dedupe_rows(all_rows)
