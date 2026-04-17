@@ -1,5 +1,3 @@
-# reverted to Lottery USA parser with tolerant full-text fallbacks
-# placeholder due lengthimport os
 import re
 import csv
 import json
