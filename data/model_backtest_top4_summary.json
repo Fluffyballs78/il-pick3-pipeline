@@ -1,48 +1,48 @@
 {
-  "total_predictions": 11677,
-  "top4_hit_rate_any": 0.8853301361651109,
-  "top4_hit_rate_2plus": 0.45131454997002657,
+  "total_predictions": 11678,
+  "top4_hit_rate_any": 0.8853399554718273,
+  "top4_hit_rate_2plus": 0.45144716561054976,
   "distribution_next_draw_hits_in_top4": {
     "0": 1339,
-    "1": 5068,
-    "2": 4332,
-    "3": 905,
+    "1": 5067,
+    "2": 4336,
+    "3": 903,
     "4": 33
   },
   "regime_analysis": {
     "counts": {
       "0": 2292,
       "1": 5609,
-      "2": 3225,
+      "2": 3226,
       "3": 535,
       "4": 16
     },
     "two_plus_hit_rate_by_regime": {
-      "0": 0.4363001745200698,
-      "1": 0.4537350686396862,
-      "2": 0.4576744186046512,
+      "0": 0.43673647469458987,
+      "1": 0.45391335353895523,
+      "2": 0.4575325480471172,
       "3": 0.44485981308411215,
       "4": 0.6875
     }
   },
-  "hit_count_mean": 1.4197996060632012,
+  "hit_count_mean": 1.4197636581606439,
   "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
   "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier, with regime-aware structural weighting (Variant B).",
   "structural_conditioning": {
     "enabled": true,
     "regime_definition": "prev_repeats = |set(t-1) \u2229 set(t)| using 4-digit digit-sets",
-    "overall_repeat_given_present": 0.3411943043164931,
+    "overall_repeat_given_present": 0.3412100882097155,
     "per_regime_multiplier": {
-      "0": 0.905177785543928,
-      "1": 0.987729346427128,
-      "2": 1.0613942973921047,
-      "3": 1.0939104346423818,
-      "4": 1.4196456209031318
+      "0": 0.9051359133074146,
+      "1": 0.9876836554728586,
+      "2": 1.0614842669210818,
+      "3": 1.0938598319020414,
+      "4": 1.4195799501165163
     },
     "current_prev_repeat_regime": 2,
     "current_prev_transition_overlap_digits": [
-      1,
-      5
+      8,
+      9
     ],
     "current_prev_transition_overlap_count": 2
   }
