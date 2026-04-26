@@ -1,11 +1,11 @@
 {
-  "total_predictions": 11686,
-  "top4_hit_rate_any": 0.884990587027212,
-  "top4_hit_rate_2plus": 0.45122368646243366,
+  "total_predictions": 11687,
+  "top4_hit_rate_any": 0.8850859929836571,
+  "top4_hit_rate_2plus": 0.4512706425943356,
   "distribution_next_draw_hits_in_top4": {
-    "0": 1344,
-    "1": 5069,
-    "2": 4337,
+    "0": 1343,
+    "1": 5070,
+    "2": 4338,
     "3": 903,
     "4": 33
   },
@@ -14,37 +14,35 @@
       "0": 2294,
       "1": 5611,
       "2": 3227,
-      "3": 538,
+      "3": 539,
       "4": 16
     },
     "two_plus_hit_rate_by_regime": {
       "0": 0.4372275501307759,
       "1": 0.4539297807877384,
       "2": 0.4573907654167958,
-      "3": 0.43866171003717475,
+      "3": 0.4397031539888683,
       "4": 0.6875
     }
   },
-  "hit_count_mean": 1.4191340065035085,
+  "hit_count_mean": 1.4192692735518098,
   "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
   "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier, with regime-aware structural weighting (Variant B).",
   "structural_conditioning": {
     "enabled": true,
     "regime_definition": "prev_repeats = |set(t-1) \u2229 set(t)| using 4-digit digit-sets",
-    "overall_repeat_given_present": 0.34130353817504655,
+    "overall_repeat_given_present": 0.34130294453547844,
     "per_regime_multiplier": {
-      "0": 0.9048237247159702,
-      "1": 0.9875112943570851,
-      "2": 1.0608284873488123,
-      "3": 1.0999690212030542,
-      "4": 1.4191912647315583
+      "0": 0.9048252985059821,
+      "1": 0.9875130119683383,
+      "2": 1.0608303324830988,
+      "3": 1.0997922076279092,
+      "4": 1.419193733178148
     },
-    "current_prev_repeat_regime": 3,
+    "current_prev_repeat_regime": 1,
     "current_prev_transition_overlap_digits": [
-      3,
-      4,
-      8
+      4
     ],
-    "current_prev_transition_overlap_count": 3
+    "current_prev_transition_overlap_count": 1
   }
 }
