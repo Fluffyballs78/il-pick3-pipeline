@@ -1,101 +1,99 @@
 {
   "last_observed_draw": {
-    "draw_date": "2026-05-08",
-    "draw_time": "EVENING",
-    "pick4_like": "2873",
-    "pick3": "287",
-    "fireball": 3
+    "draw_date": "2026-05-09",
+    "draw_time": "MIDDAY",
+    "pick4_like": "8040",
+    "pick3": "804",
+    "fireball": 0
   },
   "next_expected_draw": {
     "draw_date": "2026-05-09",
-    "draw_time": "MIDDAY",
+    "draw_time": "EVENING",
     "note": "Two draws/day (MIDDAY then EVENING). This is the next draw slot in sequence."
   },
   "structural_context": {
     "prev_draw_digits": [
-      3,
-      4,
-      8,
-      9
-    ],
-    "last_draw_digits": [
       2,
       3,
       7,
       8
     ],
-    "prev_to_last_overlap_digits": [
-      3,
+    "last_draw_digits": [
+      0,
+      4,
       8
     ],
-    "prev_to_last_overlap_count": 2,
-    "prev_repeat_regime": 2,
-    "regime_multiplier": 1.060706069582265,
-    "struct_weight": 0.09
+    "prev_to_last_overlap_digits": [
+      8
+    ],
+    "prev_to_last_overlap_count": 1,
+    "prev_repeat_regime": 1,
+    "regime_multiplier": 0.9873628894230828,
+    "struct_weight": 0.05
   },
   "next_draw_odds": {
     "digits": [
       {
         "digit": 0,
-        "prob": 0.035715,
-        "score": -0.829804,
-        "drought_draws": 5,
-        "drought_bucket": "3-5",
-        "rate10": 0.3,
-        "rate25": 0.24,
-        "rate50": 0.26,
-        "in_last_draw": 0
+        "prob": 0.052209,
+        "score": -0.420273,
+        "drought_draws": 0,
+        "drought_bucket": "0-2",
+        "rate10": 0.4,
+        "rate25": 0.28,
+        "rate50": 0.28,
+        "in_last_draw": 1
       },
       {
         "digit": 1,
-        "prob": 0.153761,
-        "score": 0.630033,
-        "drought_draws": 3,
+        "prob": 0.115995,
+        "score": 0.378012,
+        "drought_draws": 4,
         "drought_bucket": "3-5",
         "rate10": 0.4,
-        "rate25": 0.4,
+        "rate25": 0.36,
         "rate50": 0.44,
         "in_last_draw": 0
       },
       {
         "digit": 2,
-        "prob": 0.030593,
-        "score": -0.984591,
-        "drought_draws": 0,
-        "drought_bucket": "0-2",
-        "rate10": 0.3,
-        "rate25": 0.2,
-        "rate50": 0.26,
-        "in_last_draw": 1
-      },
-      {
-        "digit": 3,
-        "prob": 0.103375,
-        "score": 0.232995,
-        "drought_draws": 0,
-        "drought_bucket": "0-2",
-        "rate10": 0.4,
-        "rate25": 0.36,
-        "rate50": 0.36,
-        "in_last_draw": 1
-      },
-      {
-        "digit": 4,
-        "prob": 0.224742,
-        "score": 1.009585,
+        "prob": 0.028132,
+        "score": -1.03863,
         "drought_draws": 1,
         "drought_bucket": "0-2",
         "rate10": 0.3,
-        "rate25": 0.48,
-        "rate50": 0.5,
+        "rate25": 0.2,
+        "rate50": 0.24,
         "in_last_draw": 0
       },
       {
-        "digit": 5,
-        "prob": 0.075095,
-        "score": -0.086616,
-        "drought_draws": 2,
+        "digit": 3,
+        "prob": 0.082862,
+        "score": 0.041639,
+        "drought_draws": 1,
         "drought_bucket": "0-2",
+        "rate10": 0.3,
+        "rate25": 0.36,
+        "rate50": 0.36,
+        "in_last_draw": 0
+      },
+      {
+        "digit": 4,
+        "prob": 0.312063,
+        "score": 1.367669,
+        "drought_draws": 0,
+        "drought_bucket": "0-2",
+        "rate10": 0.4,
+        "rate25": 0.52,
+        "rate50": 0.52,
+        "in_last_draw": 1
+      },
+      {
+        "digit": 5,
+        "prob": 0.076353,
+        "score": -0.040173,
+        "drought_draws": 3,
+        "drought_bucket": "3-5",
         "rate10": 0.2,
         "rate25": 0.4,
         "rate50": 0.32,
@@ -103,44 +101,44 @@
       },
       {
         "digit": 6,
-        "prob": 0.130289,
-        "score": 0.46439,
-        "drought_draws": 2,
-        "drought_bucket": "0-2",
-        "rate10": 0.3,
-        "rate25": 0.44,
-        "rate50": 0.38,
+        "prob": 0.085375,
+        "score": 0.071519,
+        "drought_draws": 3,
+        "drought_bucket": "3-5",
+        "rate10": 0.2,
+        "rate25": 0.4,
+        "rate50": 0.36,
         "in_last_draw": 0
       },
       {
         "digit": 7,
-        "prob": 0.032507,
-        "score": -0.923898,
-        "drought_draws": 0,
+        "prob": 0.030311,
+        "score": -0.964024,
+        "drought_draws": 1,
         "drought_bucket": "0-2",
         "rate10": 0.3,
         "rate25": 0.24,
-        "rate50": 0.22,
-        "in_last_draw": 1
+        "rate50": 0.2,
+        "in_last_draw": 0
       },
       {
         "digit": 8,
-        "prob": 0.097854,
-        "score": 0.178114,
+        "prob": 0.124046,
+        "score": 0.445115,
         "drought_draws": 0,
         "drought_bucket": "0-2",
-        "rate10": 0.5,
-        "rate25": 0.32,
-        "rate50": 0.34,
+        "rate10": 0.6,
+        "rate25": 0.36,
+        "rate50": 0.36,
         "in_last_draw": 1
       },
       {
         "digit": 9,
-        "prob": 0.116069,
-        "score": 0.348817,
-        "drought_draws": 1,
+        "prob": 0.092654,
+        "score": 0.153331,
+        "drought_draws": 2,
         "drought_bucket": "0-2",
-        "rate10": 0.4,
+        "rate10": 0.3,
         "rate25": 0.36,
         "rate50": 0.4,
         "in_last_draw": 0
@@ -149,18 +147,18 @@
     "top4": [
       1,
       4,
-      6,
+      8,
       9
     ],
-    "top4_2plus_score": 0.899735,
-    "top4_2plus_score_base": 0.848242,
+    "top4_2plus_score": 0.85748,
+    "top4_2plus_score_base": 0.868455,
     "order_by_prob": [
       4,
-      1,
-      6,
-      9,
-      3,
       8,
+      1,
+      9,
+      6,
+      3,
       5,
       0,
       7,
