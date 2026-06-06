@@ -1,48 +1,49 @@
 {
-  "total_predictions": 11768,
-  "top4_hit_rate_any": 0.8850271923861319,
-  "top4_hit_rate_2plus": 0.4510537049626105,
+  "total_predictions": 11769,
+  "top4_hit_rate_any": 0.8849519925227292,
+  "top4_hit_rate_2plus": 0.4510153793865239,
   "distribution_next_draw_hits_in_top4": {
-    "0": 1353,
+    "0": 1354,
     "1": 5107,
-    "2": 4363,
-    "3": 912,
+    "2": 4362,
+    "3": 913,
     "4": 33
   },
   "regime_analysis": {
     "counts": {
       "0": 2315,
-      "1": 5648,
+      "1": 5649,
       "2": 3246,
       "3": 543,
       "4": 16
     },
     "two_plus_hit_rate_by_regime": {
       "0": 0.4375809935205184,
-      "1": 0.45396600566572237,
+      "1": 0.45388564347672156,
       "2": 0.4568699938385706,
       "3": 0.43646408839779005,
       "4": 0.6875
     }
   },
-  "hit_count_mean": 1.41918762746431,
+  "hit_count_mean": 1.4191520095165264,
   "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
   "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier, with regime-aware structural weighting (Variant B).",
   "structural_conditioning": {
     "enabled": true,
     "regime_definition": "prev_repeats = |set(t-1) \u2229 set(t)| using 4-digit digit-sets",
-    "overall_repeat_given_present": 0.34115064979901855,
+    "overall_repeat_given_present": 0.34116631734681296,
     "per_regime_multiplier": {
-      "0": 0.9050786070725796,
-      "1": 0.987477810428636,
-      "2": 1.060828458734044,
-      "3": 1.1002750251544438,
-      "4": 1.4198272824201241
+      "0": 0.9050370427046657,
+      "1": 0.9875316690551458,
+      "2": 1.0607797417894518,
+      "3": 1.1002244966858727,
+      "4": 1.41976207899682
     },
-    "current_prev_repeat_regime": 1,
+    "current_prev_repeat_regime": 2,
     "current_prev_transition_overlap_digits": [
-      1
+      1,
+      7
     ],
-    "current_prev_transition_overlap_count": 1
+    "current_prev_transition_overlap_count": 2
   }
 }
