@@ -1,10 +1,10 @@
 {
-  "total_predictions": 11797,
-  "top4_hit_rate_any": 0.8852250572179368,
-  "top4_hit_rate_2plus": 0.4511316436382131,
+  "total_predictions": 11798,
+  "top4_hit_rate_any": 0.8852347855568741,
+  "top4_hit_rate_2plus": 0.4510934056619766,
   "distribution_next_draw_hits_in_top4": {
     "0": 1354,
-    "1": 5121,
+    "1": 5122,
     "2": 4376,
     "3": 913,
     "4": 33
@@ -12,37 +12,38 @@
   "regime_analysis": {
     "counts": {
       "0": 2321,
-      "1": 5658,
+      "1": 5659,
       "2": 3259,
       "3": 543,
       "4": 16
     },
     "two_plus_hit_rate_by_regime": {
       "0": 0.43731150366221455,
-      "1": 0.4536938847649346,
+      "1": 0.45361371267008305,
       "2": 0.4578091439091746,
       "3": 0.43646408839779005,
       "4": 0.6875
     }
   },
-  "hit_count_mean": 1.4193439009917777,
+  "hit_count_mean": 1.419308357348703,
   "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
   "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier, with regime-aware structural weighting (Variant B).",
   "structural_conditioning": {
     "enabled": true,
     "regime_definition": "prev_repeats = |set(t-1) \u2229 set(t)| using 4-digit digit-sets",
-    "overall_repeat_given_present": 0.34118023270115366,
+    "overall_repeat_given_present": 0.3411958580318272,
     "per_regime_multiplier": {
-      "0": 0.9057174065742286,
-      "1": 0.9881334789758575,
-      "2": 1.0593051258399668,
-      "3": 1.100179623002528,
-      "4": 1.4197041726748378
+      "0": 0.9056759285385451,
+      "1": 0.9881871020377496,
+      "2": 1.059256614134781,
+      "3": 1.100129239417836,
+      "4": 1.4196391562139563
     },
-    "current_prev_repeat_regime": 1,
+    "current_prev_repeat_regime": 2,
     "current_prev_transition_overlap_digits": [
-      8
+      3,
+      4
     ],
-    "current_prev_transition_overlap_count": 1
+    "current_prev_transition_overlap_count": 2
   }
 }
