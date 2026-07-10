@@ -1,48 +1,48 @@
 {
-  "total_predictions": 11836,
-  "top4_hit_rate_any": 0.8851808043257857,
-  "top4_hit_rate_2plus": 0.4509969584319027,
+  "total_predictions": 11837,
+  "top4_hit_rate_any": 0.8852749852158486,
+  "top4_hit_rate_2plus": 0.45095885781870404,
   "distribution_next_draw_hits_in_top4": {
-    "0": 1359,
-    "1": 5139,
-    "2": 4389,
-    "3": 916,
+    "0": 1358,
+    "1": 5141,
+    "2": 4390,
+    "3": 915,
     "4": 33
   },
   "regime_analysis": {
     "counts": {
       "0": 2325,
       "1": 5669,
-      "2": 3282,
+      "2": 3283,
       "3": 544,
       "4": 16
     },
     "two_plus_hit_rate_by_regime": {
-      "0": 0.43655913978494626,
+      "0": 0.436989247311828,
       "1": 0.45351913917798553,
-      "2": 0.4582571602681292,
-      "3": 0.43566176470588236,
+      "2": 0.4581175753883643,
+      "3": 0.4338235294117647,
       "4": 0.6875
     }
   },
-  "hit_count_mean": 1.4191449814126393,
+  "hit_count_mean": 1.4191095716820141,
   "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
   "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier, with regime-aware structural weighting (Variant B).",
   "structural_conditioning": {
     "enabled": true,
     "regime_definition": "prev_repeats = |set(t-1) \u2229 set(t)| using 4-digit digit-sets",
-    "overall_repeat_given_present": 0.34151304177289665,
+    "overall_repeat_given_present": 0.34152858123345425,
     "per_regime_multiplier": {
-      "0": 0.9054625411509635,
-      "1": 0.9876021786364295,
-      "2": 1.0600754701175212,
-      "3": 1.0998059815653294,
-      "4": 1.4183206517837914
+      "0": 0.905421342843654,
+      "1": 0.9875572429972332,
+      "2": 1.0601638432958784,
+      "3": 1.0997559406826312,
+      "4": 1.4182561185674298
     },
     "current_prev_repeat_regime": 2,
     "current_prev_transition_overlap_digits": [
       2,
-      5
+      3
     ],
     "current_prev_transition_overlap_count": 2
   }
