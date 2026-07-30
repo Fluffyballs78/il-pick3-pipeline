@@ -1,24 +1,24 @@
 {
-  "generated_at": "2026-07-29T20:12:50.323765Z",
+  "generated_at": "2026-07-30T05:27:34.755498Z",
   "source": {
     "live_log_path": "data/live_performance_log.csv",
-    "rows": 11876,
+    "rows": 11877,
     "latest_draw": {
       "draw_date": "2026-07-29",
-      "draw_time": "MIDDAY",
-      "actual_pick3": "252",
-      "actual_fireball": "3",
-      "top4": "0148",
-      "hits_in_top4": 0,
-      "regime": 2,
-      "struct_weight": 0.09
+      "draw_time": "EVENING",
+      "actual_pick3": "778",
+      "actual_fireball": "0",
+      "top4": "1258",
+      "hits_in_top4": 1,
+      "regime": 1,
+      "struct_weight": 0.05
     }
   },
   "overall": {
-    "n": 11876,
-    "any_hit_rate": 0.8852307174132704,
-    "hit_2plus_rate": 0.4507409902324015,
-    "mean_hits": 1.4188278881778376,
+    "n": 11877,
+    "any_hit_rate": 0.885324576913362,
+    "hit_2plus_rate": 0.4507030394880862,
+    "mean_hits": 1.4188768207459796,
     "by_regime": {
       "0": {
         "n": 2331,
@@ -27,10 +27,10 @@
         "mean_hits": 1.38996138996139
       },
       "1": {
-        "n": 5692,
-        "any_hit_rate": 0.884574841883345,
-        "hit_2plus_rate": 0.4534434293745608,
-        "mean_hits": 1.4249824314827828
+        "n": 5693,
+        "any_hit_rate": 0.8847707711224311,
+        "hit_2plus_rate": 0.45336378008080097,
+        "mean_hits": 1.4250834357983488
       },
       "2": {
         "n": 3291,
@@ -56,8 +56,8 @@
     "20": {
       "n": 20,
       "any_hit_rate": 0.85,
-      "hit_2plus_rate": 0.25,
-      "mean_hits": 1.2,
+      "hit_2plus_rate": 0.2,
+      "mean_hits": 1.15,
       "by_regime": {
         "0": {
           "n": 4,
@@ -68,8 +68,8 @@
         "1": {
           "n": 12,
           "any_hit_rate": 0.9166666666666666,
-          "hit_2plus_rate": 0.3333333333333333,
-          "mean_hits": 1.4166666666666667
+          "hit_2plus_rate": 0.25,
+          "mean_hits": 1.3333333333333333
         },
         "2": {
           "n": 3,
@@ -104,16 +104,16 @@
           "mean_hits": 1.1666666666666667
         },
         "1": {
-          "n": 24,
-          "any_hit_rate": 0.9583333333333334,
-          "hit_2plus_rate": 0.4583333333333333,
-          "mean_hits": 1.5416666666666667
+          "n": 25,
+          "any_hit_rate": 0.96,
+          "hit_2plus_rate": 0.44,
+          "mean_hits": 1.52
         },
         "2": {
-          "n": 18,
-          "any_hit_rate": 0.8333333333333334,
-          "hit_2plus_rate": 0.3888888888888889,
-          "mean_hits": 1.3333333333333333
+          "n": 17,
+          "any_hit_rate": 0.8235294117647058,
+          "hit_2plus_rate": 0.4117647058823529,
+          "mean_hits": 1.3529411764705883
         },
         "3": {
           "n": 2,
@@ -136,16 +136,16 @@
       "mean_hits": 1.34,
       "by_regime": {
         "0": {
-          "n": 14,
-          "any_hit_rate": 0.9285714285714286,
-          "hit_2plus_rate": 0.2857142857142857,
-          "mean_hits": 1.2142857142857142
+          "n": 13,
+          "any_hit_rate": 0.9230769230769231,
+          "hit_2plus_rate": 0.3076923076923077,
+          "mean_hits": 1.2307692307692308
         },
         "1": {
-          "n": 42,
-          "any_hit_rate": 0.8809523809523809,
-          "hit_2plus_rate": 0.38095238095238093,
-          "mean_hits": 1.3333333333333333
+          "n": 43,
+          "any_hit_rate": 0.8837209302325582,
+          "hit_2plus_rate": 0.37209302325581395,
+          "mean_hits": 1.3255813953488371
         },
         "2": {
           "n": 41,
@@ -207,10 +207,10 @@
     }
   },
   "stability": {
-    "current_top4": "[1, 2, 5, 8]",
-    "prev_draw_pred_top4": "0148",
+    "current_top4": "[0, 2, 5, 8]",
+    "prev_draw_pred_top4": "1258",
     "repeat_streak": 1,
-    "overlap_prev": 2
+    "overlap_prev": 3
   },
   "notes": "Rates computed from live_performance_log.csv (one row per draw). Stability compares current odds top4 vs previous prediction."
 }
