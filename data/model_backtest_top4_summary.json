@@ -1,47 +1,47 @@
 {
-  "total_predictions": 11878,
-  "top4_hit_rate_any": 0.885165852837178,
-  "top4_hit_rate_2plus": 0.4504967166189594,
+  "total_predictions": 11879,
+  "top4_hit_rate_any": 0.8852597019951174,
+  "top4_hit_rate_2plus": 0.4506271571681118,
   "distribution_next_draw_hits_in_top4": {
-    "0": 1364,
+    "0": 1363,
     "1": 5163,
-    "2": 4400,
+    "2": 4402,
     "3": 918,
     "4": 33
   },
   "regime_analysis": {
     "counts": {
       "0": 2332,
-      "1": 5693,
+      "1": 5694,
       "2": 3291,
       "3": 546,
       "4": 16
     },
     "two_plus_hit_rate_by_regime": {
-      "0": 0.436106346483705,
-      "1": 0.45336378008080097,
+      "0": 0.4365351629502573,
+      "1": 0.45328415876361083,
       "2": 0.4576116681859617,
-      "3": 0.43223443223443225,
+      "3": 0.4340659340659341,
       "4": 0.6875
     }
   },
-  "hit_count_mean": 1.4185047987876747,
+  "hit_count_mean": 1.4187221146561158,
   "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
   "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier, with regime-aware structural weighting (Variant B).",
   "structural_conditioning": {
     "enabled": true,
     "regime_definition": "prev_repeats = |set(t-1) \u2229 set(t)| using 4-digit digit-sets",
-    "overall_repeat_given_present": 0.34149320824782564,
+    "overall_repeat_given_present": 0.34149261023573957,
     "per_regime_multiplier": {
-      "0": 0.9058622160591477,
-      "1": 0.9876622022425646,
-      "2": 1.059924389226693,
-      "3": 1.0989912412945666,
-      "4": 1.4184030261840035
+      "0": 0.9058638023791361,
+      "1": 0.9876621473242047,
+      "2": 1.05992624533595,
+      "3": 1.098993165816577,
+      "4": 1.4184055100507906
     },
     "current_prev_repeat_regime": 1,
     "current_prev_transition_overlap_digits": [
-      7
+      6
     ],
     "current_prev_transition_overlap_count": 1
   }
