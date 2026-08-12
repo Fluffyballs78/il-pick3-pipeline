@@ -1,11 +1,11 @@
 {
-  "total_predictions": 11902,
-  "top4_hit_rate_any": 0.8851453537220635,
-  "top4_hit_rate_2plus": 0.45009242144177447,
+  "total_predictions": 11903,
+  "top4_hit_rate_any": 0.8851550029404351,
+  "top4_hit_rate_2plus": 0.45013862051583636,
   "distribution_next_draw_hits_in_top4": {
     "0": 1367,
     "1": 5178,
-    "2": 4405,
+    "2": 4406,
     "3": 919,
     "4": 33
   },
@@ -13,37 +13,36 @@
     "counts": {
       "0": 2339,
       "1": 5703,
-      "2": 3298,
+      "2": 3299,
       "3": 546,
       "4": 16
     },
     "two_plus_hit_rate_by_regime": {
       "0": 0.4360837964942283,
       "1": 0.4529195160441873,
-      "2": 0.4569436021831413,
-      "3": 0.43223443223443225,
+      "2": 0.45680509245225825,
+      "3": 0.4340659340659341,
       "4": 0.6875
     }
   },
-  "hit_count_mean": 1.4179969752982693,
+  "hit_count_mean": 1.4180458707888768,
   "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
   "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier, with regime-aware structural weighting (Variant B).",
   "structural_conditioning": {
     "enabled": true,
     "regime_definition": "prev_repeats = |set(t-1) \u2229 set(t)| using 4-digit digit-sets",
-    "overall_repeat_given_present": 0.34146995708154504,
+    "overall_repeat_given_present": 0.3414610357944016,
     "per_regime_multiplier": {
-      "0": 0.9053405097504024,
-      "1": 0.9879618928052155,
-      "2": 1.0598272036964504,
-      "3": 1.0990660731430566,
-      "4": 1.4184996072270228
+      "0": 0.9053641634086631,
+      "1": 0.9879877050965417,
+      "2": 1.0597445824197138,
+      "3": 1.0990947882320428,
+      "4": 1.4185366680948301
     },
-    "current_prev_repeat_regime": 2,
+    "current_prev_repeat_regime": 1,
     "current_prev_transition_overlap_digits": [
-      2,
       4
     ],
-    "current_prev_transition_overlap_count": 2
+    "current_prev_transition_overlap_count": 1
   }
 }
