@@ -1,11 +1,11 @@
 {
-  "total_predictions": 11913,
-  "top4_hit_rate_any": 0.8851674641148325,
-  "top4_hit_rate_2plus": 0.45018047511122306,
+  "total_predictions": 11914,
+  "top4_hit_rate_any": 0.8852610374349504,
+  "top4_hit_rate_2plus": 0.45047842873929833,
   "distribution_next_draw_hits_in_top4": {
-    "0": 1368,
-    "1": 5182,
-    "2": 4408,
+    "0": 1367,
+    "1": 5180,
+    "2": 4412,
     "3": 922,
     "4": 33
   },
@@ -14,37 +14,35 @@
       "0": 2341,
       "1": 5707,
       "2": 3303,
-      "3": 546,
+      "3": 547,
       "4": 16
     },
     "two_plus_hit_rate_by_regime": {
       "0": 0.43656557026911574,
-      "1": 0.4527772910460838,
+      "1": 0.4529525144559313,
       "2": 0.45685740236148953,
-      "3": 0.4340659340659341,
+      "3": 0.43875685557586835,
       "4": 0.6875
     }
   },
-  "hit_count_mean": 1.4182825484764543,
+  "hit_count_mean": 1.4186671143192882,
   "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
   "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier, with regime-aware structural weighting (Variant B).",
   "structural_conditioning": {
     "enabled": true,
     "regime_definition": "prev_repeats = |set(t-1) \u2229 set(t)| using 4-digit digit-sets",
-    "overall_repeat_given_present": 0.3414859926918392,
+    "overall_repeat_given_present": 0.3414770789691626,
     "per_regime_multiplier": {
-      "0": 0.905354530681613,
-      "1": 0.9880060671603004,
-      "2": 1.0597188676928422,
-      "3": 1.099014462840984,
-      "4": 1.4184329968611784
+      "0": 0.9053781635392997,
+      "1": 0.9880318575064989,
+      "2": 1.0597465299890358,
+      "3": 1.0983445700383707,
+      "4": 1.4184700228261644
     },
-    "current_prev_repeat_regime": 3,
+    "current_prev_repeat_regime": 1,
     "current_prev_transition_overlap_digits": [
-      2,
-      3,
-      6
+      2
     ],
-    "current_prev_transition_overlap_count": 3
+    "current_prev_transition_overlap_count": 1
   }
 }
