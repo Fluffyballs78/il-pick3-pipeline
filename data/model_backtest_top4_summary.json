@@ -1,48 +1,49 @@
 {
-  "total_predictions": 11928,
-  "top4_hit_rate_any": 0.8852280348759222,
-  "top4_hit_rate_2plus": 0.45020120724346074,
+  "total_predictions": 11929,
+  "top4_hit_rate_any": 0.885237656132115,
+  "top4_hit_rate_2plus": 0.4504149551513119,
   "distribution_next_draw_hits_in_top4": {
     "0": 1369,
-    "1": 5189,
-    "2": 4414,
+    "1": 5187,
+    "2": 4417,
     "3": 923,
     "4": 33
   },
   "regime_analysis": {
     "counts": {
       "0": 2341,
-      "1": 5714,
+      "1": 5715,
       "2": 3310,
       "3": 547,
       "4": 16
     },
     "two_plus_hit_rate_by_regime": {
       "0": 0.43656557026911574,
-      "1": 0.45257262863143155,
+      "1": 0.452843394575678,
       "2": 0.456797583081571,
-      "3": 0.4369287020109689,
+      "3": 0.43875685557586835,
       "4": 0.6875
     }
   },
-  "hit_count_mean": 1.4183433936955063,
+  "hit_count_mean": 1.4185598122223153,
   "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
   "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier, with regime-aware structural weighting (Variant B).",
   "structural_conditioning": {
     "enabled": true,
     "regime_definition": "prev_repeats = |set(t-1) \u2229 set(t)| using 4-digit digit-sets",
-    "overall_repeat_given_present": 0.3415559772296015,
+    "overall_repeat_given_present": 0.3415713938214546,
     "per_regime_multiplier": {
-      "0": 0.9051690242856931,
-      "1": 0.9881888170866527,
-      "2": 1.0595580151676076,
-      "3": 1.0980908562060394,
-      "4": 1.418142361111111
+      "0": 0.9051281700992538,
+      "1": 0.9882417809495464,
+      "2": 1.0595101927393833,
+      "3": 1.0980412946243205,
+      "4": 1.418078354223045
     },
-    "current_prev_repeat_regime": 1,
+    "current_prev_repeat_regime": 2,
     "current_prev_transition_overlap_digits": [
-      3
+      3,
+      6
     ],
-    "current_prev_transition_overlap_count": 1
+    "current_prev_transition_overlap_count": 2
   }
 }
