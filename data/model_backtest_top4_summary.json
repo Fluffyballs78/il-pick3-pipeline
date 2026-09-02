@@ -1,48 +1,49 @@
 {
-  "total_predictions": 11944,
-  "top4_hit_rate_any": 0.8850468854655057,
-  "top4_hit_rate_2plus": 0.45010046885465504,
+  "total_predictions": 11945,
+  "top4_hit_rate_any": 0.8851402260359983,
+  "top4_hit_rate_2plus": 0.44997907074089577,
   "distribution_next_draw_hits_in_top4": {
-    "0": 1373,
-    "1": 5195,
-    "2": 4420,
+    "0": 1372,
+    "1": 5198,
+    "2": 4419,
     "3": 923,
     "4": 33
   },
   "regime_analysis": {
     "counts": {
       "0": 2348,
-      "1": 5719,
+      "1": 5720,
       "2": 3314,
       "3": 547,
       "4": 16
     },
     "two_plus_hit_rate_by_regime": {
       "0": 0.43611584327086883,
-      "1": 0.4525266655009617,
+      "1": 0.45227272727272727,
       "2": 0.4568497284248642,
       "3": 0.4369287020109689,
       "4": 0.6875
     }
   },
-  "hit_count_mean": 1.4179504353650367,
+  "hit_count_mean": 1.4179154457932188,
   "digit_event_definition": "Top4 evaluated vs presence in 4-digit draw (Pick3 digits + Fireball digit)",
   "objective": "Top4 selection optimized for P(2+ hits) (approx Binomial over 4 slots), scaled by repeat-regime multiplier, with regime-aware structural weighting (Variant B).",
   "structural_conditioning": {
     "enabled": true,
     "regime_definition": "prev_repeats = |set(t-1) \u2229 set(t)| using 4-digit digit-sets",
-    "overall_repeat_given_present": 0.3414071230746805,
+    "overall_repeat_given_present": 0.34142253315843174,
     "per_regime_multiplier": {
-      "0": 0.9056407428542999,
-      "1": 0.9881074691142547,
-      "2": 1.0594242942599854,
-      "3": 1.0985696259076057,
-      "4": 1.4187606738774639
+      "0": 0.9055998668184777,
+      "1": 0.9881604885240572,
+      "2": 1.0593764772136072,
+      "3": 1.0985200420392383,
+      "4": 1.4186966382070436
     },
-    "current_prev_repeat_regime": 1,
+    "current_prev_repeat_regime": 2,
     "current_prev_transition_overlap_digits": [
+      4,
       7
     ],
-    "current_prev_transition_overlap_count": 1
+    "current_prev_transition_overlap_count": 2
   }
 }
